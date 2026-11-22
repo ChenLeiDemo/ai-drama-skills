@@ -1,0 +1,78 @@
+{
+  "source": "沙盘",
+  "aspectRatio": "16:9",
+  "promptLang": "en",
+  "episodes": [
+    {
+      "ep": 1,
+      "segments": [
+        {
+          "id": "E01-01",
+          "sceneIndex": 1,
+          "blocking": "船工在画面左三分之一，老妇在画面右，相距一步；两人都面朝船头。",
+          "soundscape": "水拍船身、麻绳摩擦、远处橹声",
+          "cuts": [
+            {
+              "beats": [1, 1],
+              "seconds": 3,
+              "size": "medium",
+              "camera": "Push In",
+              "characters": ["C01"],
+              "props": ["P01"],
+              "frame": "中景，船工低头盘拢湿透的麻绳，老妇在右后方提灯",
+              "shot": "中景固定微推，船工低头把湿绳一圈圈盘紧，头也不抬地低声说话",
+              "lens": "50mm 标准，中浅景深",
+              "cameraPosition": "船工 + 平视略俯",
+              "composition": "三分法",
+              "eyeline": "手中缆绳",
+              "focus": "锁定绳结与双手",
+              "stability": "handheld"
+            },
+            {
+              "beats": [2, 2],
+              "seconds": 5,
+              "size": "close",
+              "camera": "Static Shot",
+              "characters": ["C01"],
+              "props": [],
+              "frame": "特写，船工侧脸被提灯照亮，湿发贴额",
+              "shot": "特写稳住，船工侧脸被灯照亮，抬眼望向船舷外，雨丝掠过",
+              "lens": "85mm 长焦，极浅景深",
+              "cameraPosition": "船工 + 侧面平视",
+              "composition": "中心构图",
+              "eyeline": "船舷外",
+              "focus": "锁定眼睛",
+              "stability": "stable"
+            }
+          ],
+          "h3Prompt": "How the reference pictures align with the target video — Picture 1 (from Shot 1) aligns with the 0.00-second mark of the target video; Picture 2 (from Shot 2) aligns with the 3.00-second mark of the target video.\n\nintegrated_multimodal_description: [Shot 1] A weathered ferryman in a dark rain cape stands in the left third of the frame coiling a wet hemp rope, an old woman holding a lantern behind him on the right. The camera pushes in with small amplitude at slow speed. He keeps his lips moving only for a clipped mutter: <d>[Chinese] 水涨了。</d> [Shot 2] At 00:03.000, the camera cuts to a tight profile close-up of the same ferryman lit from the right by the lantern. The camera holds completely still. He lifts his chin and stares past the gunwale into the rain.\n\noverall_soundscape: Water laps against the wooden hull, wet hemp rope creaks under tension, and a distant oar knocks against a thole pin.\n\nnon_diegetic_music: N/A"
+        },
+        {
+          "id": "E01-02",
+          "sceneIndex": 1,
+          "blocking": "船工站在船舷左，老妇站在跳板右端，两人一前一后。",
+          "soundscape": "跳板吱呀、雨点砸船篷",
+          "cuts": [
+            {
+              "beats": [3, 3],
+              "seconds": 4.46,
+              "size": "wide",
+              "camera": "Static Shot",
+              "characters": ["C01"],
+              "props": [],
+              "frame": "全景，晨雾里的渡口，船工伸手扶住踏板的老人",
+              "shot": "全景固定，晨雾里的渡口，船工伸手扶住踏板的老人，动作缓慢",
+              "lens": "35mm 广角，深景深",
+              "cameraPosition": "双人 + 平视正面",
+              "composition": "对称",
+              "eyeline": "老人脚下踏板",
+              "focus": "锁定两人全身",
+              "stability": "stable"
+            }
+          ],
+          "h3Prompt": "For the target video, at 0.00 seconds into the target video, <Picture 1> (from [Shot 1]) is fully referenced.\n\nintegrated_multimodal_description: [Shot 1] A wide static shot of the fog-bound ferry pier, a weathered ferryman standing at the gunwale on the left reaches out and steadies an old woman stepping onto the wet plank. The camera holds nearly steady with a faint handheld breathing. He says quietly: <d>[Chinese] 慢点。</d> The old woman keeps both hands on his forearm as she settles her weight.\n\noverall_soundscape: The wet plank creaks under a slow foot, rain patters on the canvas awning, and water slaps the pier pilings.\n\nnon_diegetic_music: A single low cello note holds under the ambience."
+        }
+      ]
+    }
+  ]
+}
