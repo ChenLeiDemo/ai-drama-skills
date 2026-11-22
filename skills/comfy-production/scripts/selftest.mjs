@@ -51,9 +51,9 @@ function baseProd() {
     aspectRatio: '16:9',
     params: { charsPerSecond: 4, frameTolerance: 2, maxQwenRefs: 5 },
     assets: {
-      S01: { kind: 'scene', sheet: 'images/S01-sheet.png' },
-      C01: { kind: 'character', sheet: 'images/C01-sheet.png' },
-      P01: { kind: 'prop', sheet: 'images/P01-sheet.png' },
+      S01: { kind: 'scene', name: '渡船船舱', sheet: 'images/S01-sheet.png' },
+      C01: { kind: 'character', name: '船工', sheet: 'images/C01-sheet.png' },
+      P01: { kind: 'prop', name: '麻绳', sheet: 'images/P01-sheet.png' },
     },
     segments: [
       {
@@ -64,6 +64,9 @@ function baseProd() {
         dedupeFrames: 0,
         jCut: 0,
         postNote: '',
+        enter: '开场：走廊空无一人，推车从画外推入。',
+        exit: '推车已过电梯口，两人压住尸袋向左。',
+        sound: { carry: [], keep: ['河面水声', '橹声'] },
         cuts: [
           {
             qwen: {
@@ -89,6 +92,9 @@ function baseProd() {
         dedupeFrames: 0,
         jCut: 0,
         postNote: '',
+        enter: '承接 E01-01：船工视线从船舷外收回，落到跳板上的老人。',
+        exit: '两人同站跳板两端，雨还在下。',
+        sound: { carry: ['河面水声'], keep: ['雨打船篷'] },
         cuts: [
           {
             qwen: {
@@ -308,6 +314,50 @@ const withH3 = (sb, segId, fn) => {
 
   const sbMus = withH3(SB, 'E01-02', (h) => h.replace('A single low cello note holds under the ambience.', 'Tense emotional music throughout.'));
   expectFail(baseProd(), 'music-spec', sbMus);
+}
+
+/* ---------------- 段落接续 ---------------- */
+{
+  const noEnter = baseProd();
+  delete noEnter.segments[1].enter;
+  expectFail(noEnter, 'handoff-state');
+
+  const noExit = baseProd();
+  noExit.segments[0].exit = '';
+  expectFail(noExit, 'handoff-state');
+
+  // 视线：上段末镜看「船舷外」，enter 里必须交代视线转走
+  const noEye = baseProd();
+  noEye.segments[1].enter = '承接 E01-01：两人已经站定。';
+  expectFail(noEye, 'handoff-eyeline');
+  expectPass(baseProd(), 'handoff-eyeline');
+
+  // 声音：底噪必须和上段留声有交集
+  const noKeep = baseProd();
+  noKeep.segments[0].sound.keep = [];
+  expectFail(noKeep, 'handoff-sound');
+
+  const noCarry = baseProd();
+  noCarry.segments[1].sound.carry = [];
+  expectFail(noCarry, 'handoff-sound');
+
+  const wrongCarry = baseProd();
+  wrongCarry.segments[1].sound.carry = ['雨打船篷'];
+  expectFail(wrongCarry, 'handoff-sound');
+
+  // 人物：新入画的人必须在 enter 里写明来源
+  const sbCast = clone(SB);
+  sbCast.episodes[0].segments[1].cuts[0].characters = ['C01', 'C02'];
+  const castProd = baseProd();
+  castProd.assets.C02 = { kind: 'character', name: '老妇', sheet: 'images/C02-sheet.png' };
+  expectFail(castProd, 'handoff-cast', sbCast);
+  castProd.segments[1].enter = '承接 E01-01：船工视线从船舷外收回；老妇从右后方提灯入画。';
+  expectPass(castProd, 'handoff-cast', sbCast);
+
+  // 没写 name 时这道门明确跳过，不假装通过
+  const noNames = baseProd();
+  for (const id of Object.keys(noNames.assets)) delete noNames.assets[id].name;
+  ok(gatesOf(noNames)['handoff-cast'].skipped, '没写 name 时 handoff-cast 明确跳过');
 }
 
 /* ---------------- 台词预算 ---------------- */

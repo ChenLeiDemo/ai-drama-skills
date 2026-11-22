@@ -32,6 +32,7 @@
 
 | 字段 | 类型 | 说明 |
 | --- | --- | --- |
+| `name` | string? | 人物/场景的中文名。`handoff-cast` 用它核对 `enter` 里有没有点名；没写就跳过那道门 |
 | `kind` | enum | `scene` / `character` / `prop`。`image_1` 必须指向 `scene`，Ref2VA 的 `lockSheet` 必须指向 `character` |
 | `sheet` | string | 设定板文件路径，导出卡片时写进插槽清单 |
 | `tier` | enum | `fine`（1500~2500 字）/ `standard`（350~600 字）。只在写了 `moss` 时才查 |
@@ -48,6 +49,11 @@
 | `lockSheet` | string? | 仅 Ref2VA：锁脸用的角色编号。决定了 `<Picture 2>` 挂哪张定妆图 |
 | `tailFrom` | string? | 抽哪一段的末帧当本段首帧。填了就进尾帧链，`tail-anchor` 门会去查生产者末镜 |
 | `dedupeFrames` | int | 本段头部要裁掉的重复帧数，默认 0。必须 < 本段帧数 |
+| `enter` | string | **必填**。从上一段接过来什么状态、新出现的人从哪来。写法见 `continuity.md` |
+| `exit` | string | **必填**。这一段把世界留在什么状态（人物位置、道具在哪、门开还是关） |
+| `sound.carry` | string[] | 从上一段继承的声源。非首段时必填，且要与上段 `keep` 有交集 |
+| `sound.keep` | string[] | 本段结束时仍在响的声源，留给下一段继承。**必填** |
+| `sound.add` / `sound.drop` | string[] | 本段新增/消失的声源，只记录不设门 |
 | `jCut` | number | 声音提前量（秒），只影响后期表的备注与 ffmpeg 提示 |
 | `postNote` | string | 这一段的衔接备注（假甩镜、L-Cut 延留等），原样写进后期表 |
 | `cuts` | cut[] | 与 storyboard 的切**等长、同序**。这里只有 `qwen`，没有秒数 |

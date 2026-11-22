@@ -6,7 +6,7 @@ description: |
   并排好 TextEncodeQwenImage21 的 image_1..N 插槽，为 CH/SC/PR 资产写 MOSS 文生图母稿，为每段补 MiniMax H3
   的模式（T2VA/I2VA/FL2VA/L2VA/Ref2VA）与 ComfyUI 量化版帧数（17k+5），最后导出成片总装包（尾帧去重裁剪表
   + J/L-Cut + ffmpeg 命令 + -14 LUFS 归一）。
-  17 道质量门全部由脚本对着 storyboard 逐条对账，秒数、节拍、画内人物一改就报错。
+  21 道质量门全部由脚本对着 storyboard 逐条对账，秒数、节拍、画内人物一改就报错；其中四道专查段与段之间的接续。
   不出图、不改戏、不改分镜结构——那些是上游的事。
   Use when asked to 出 ComfyUI 提示词、垫图、多图参考、Qwen 编辑提示词、MOSS 母稿、H3 提示词、帧数换算、后期总装。
 allowed-tools:
@@ -77,7 +77,8 @@ node {baseDir}/scripts/comfy-production.mjs seed storyboard.json --ep 1 \
 1. **`h3Mode`**：`T2VA` 纯文本 / `I2VA` 首帧推动（最常用）/ `FL2VA` 首尾帧插值 / `L2VA` 锁尾帧 / `Ref2VA` 多图锁脸。选型见 `{baseDir}/references/comfyui-h3.md`。
 2. **`qwen`**：每切一条。`canvas` 是 `image_1`（必须是场景，它决定画布与光位），`refs` 是 `image_2..N`（画内每个角色、每个道具都要挂，漏一件模型就当场发明一件），`prompt` 是指令式中文编辑提示词。写法见 `{baseDir}/references/qwen-i2i.md`。
 3. **`tailFrom` / `dedupeFrames`**：这一段要抽上一段末帧当首帧时填。生产者末镜必须已经写了稳焦静止（`tail-anchor` 门盯着），`dedupeFrames` 是头部要裁掉的重复帧数。
-4. **资产的 `moss`**：只给要出设定板的 CH/SC/PR 写。`tier: fine`（1500~2500 字，主角与主场景）或 `standard`（350~600 字，配角与道具）。写法见 `{baseDir}/references/moss-t2i.md`。
+4. **`enter` / `exit` / `sound`**：段与段之间的三句交代。`enter` 写「从上一段接过来什么状态、新出现的人从哪来」，`exit` 写「把世界留在什么状态」，`sound.carry` / `keep` 把底噪连成一条线。写法与四种合法转场见 `{baseDir}/references/continuity.md`。
+5. **资产的 `moss`**：只给要出设定板的 CH/SC/PR 写。`tier: fine`（1500~2500 字，主角与主场景）或 `standard`（350~600 字，配角与道具）。写法见 `{baseDir}/references/moss-t2i.md`。写了 moss 的资产顺带补一个 `name`——`handoff-cast` 靠它核对「新入画的人有没有写明从哪来」。
 
 H3 提示词正文**不在这里写**——它在 `storyboard.json` 的 `seg.h3Prompt` 里，这里只校验它的模式字段族对不对。
 
@@ -87,7 +88,7 @@ H3 提示词正文**不在这里写**——它在 `storyboard.json` 的 `seg.h3P
 node {baseDir}/scripts/comfy-production.mjs validate production.json --storyboard storyboard.json
 ```
 
-17 道门，全是代码：
+21 道门，全是代码：
 
 | 门 | 查什么 |
 | --- | --- |
@@ -107,6 +108,10 @@ node {baseDir}/scripts/comfy-production.mjs validate production.json --storyboar
 | `soundscape-vocals` | `overall_soundscape` 不出现人声词 |
 | `music-spec` | `non_diegetic_music` 是 N/A 或写了乐器编制 |
 | `speech-fit` | 每镜 `<d>` 台词字数 ÷ 4 ≤ 该切秒数 |
+| `handoff-state` | 每段都有 `enter` / `exit`——接过来什么、留下去什么 |
+| `handoff-cast` | 本段首镜新出现的人，`enter` 里必须写明从哪来（按资产 `name` 核对） |
+| `handoff-eyeline` | 上段末镜的视线目标，本段 `enter` 要交代怎么转过去 |
+| `handoff-sound` | `sound.carry` 与上段 `sound.keep` 至少共用一个声源，底噪不许断档 |
 | `moss-tier` | 写了 moss 的资产篇幅落在档位内（警告级） |
 
 **有违规逐条修，改完重跑，直到 0 违规。** 警告可以带着交付，但要说清。
@@ -150,7 +155,7 @@ node {baseDir}/scripts/comfy-production.mjs post production.json --storyboard st
 node {baseDir}/scripts/selftest.mjs
 ```
 
-97 项断言，不调模型、不花额度。17 道门每道都有击穿用例，含一次 CLI 端到端。改完脚本先跑这个。
+107 项断言，不调模型、不花额度。21 道门每道都有击穿用例，含一次 CLI 端到端。改完脚本先跑这个。
 
 ### 上下游
 

@@ -403,6 +403,69 @@ export function gateReport(prod, sb) {
     add('moss-tier', 'MOSS 母稿篇幅档位', mossBad.length === 0, mossBad.join('；'), 'warn');
   }
 
+  // 18~21 段间接续：状态 / 人物 / 视线 / 声音
+  // 每段只写自己那 5~15 秒，段与段之间就没人交代交接——人物瞬移、视线错位、底噪断档都出在这。
+  const stateBad = [];
+  const castBad = [];
+  const eyeBad = [];
+  const sndLinkBad = [];
+  let nameCount = 0;
+  for (const id of assetIds) if (str(assets[id]?.name).trim()) nameCount += 1;
+
+  segs.forEach((seg, i) => {
+    const prev = i > 0 ? segs[i - 1] : null;
+    const ref = byId.get(seg.id);
+    const prevRef = prev ? byId.get(prev.id) : null;
+    const enter = str(seg.enter).trim();
+
+    if (!enter) stateBad.push(`${seg.id} 缺 enter——这段从上一段继承了什么状态，没人写`);
+    if (!str(seg.exit).trim()) stateBad.push(`${seg.id} 缺 exit——这段把世界留在什么状态，没人写`);
+
+    const keep = seg?.sound?.keep;
+    if (!Array.isArray(keep) || keep.length === 0) {
+      sndLinkBad.push(`${seg.id} 缺 sound.keep（这段留给下一段的声源）`);
+    }
+    if (!prev) return;
+
+    // 本段首镜有、上段末镜没有的人，必须在 enter 里写明从哪来
+    if (nameCount > 0) {
+      const cur = ref?.cuts?.[0]?.characters ?? [];
+      const before = prevRef?.cuts?.at(-1)?.characters ?? [];
+      const missing = cur
+        .filter((c) => !before.includes(c))
+        .filter((c) => {
+          const name = str(assets[c]?.name).trim();
+          return !name || !enter.includes(name);
+        });
+      if (missing.length) castBad.push(`${seg.id} 新入画的 ${missing.join(',')} 没在 enter 里写明从哪来`);
+    }
+
+    // 上段末镜看什么，本段 enter 要交代视线怎么转过去
+    const curEye = str(ref?.cuts?.[0]?.eyeline).trim();
+    const prevEye = str(prevRef?.cuts?.at(-1)?.eyeline).trim();
+    if (curEye && prevEye && curEye !== prevEye && !enter.includes(prevEye)) {
+      eyeBad.push(`${seg.id} 上段末镜视线在「${prevEye}」，enter 里没交代视线怎么转的`);
+    }
+
+    // 本段继承的底噪必须与上段留声有交集，否则就是换了个录音棚
+    const carry = seg?.sound?.carry;
+    const prevKeep = prev?.sound?.keep;
+    if (!Array.isArray(carry) || carry.length === 0) {
+      sndLinkBad.push(`${seg.id} 缺 sound.carry（从上一段继承的底噪）`);
+    } else if (!Array.isArray(prevKeep) || !carry.some((x) => prevKeep.includes(x))) {
+      sndLinkBad.push(`${seg.id} 的 sound.carry 与上段 sound.keep 没有共用声源——底噪会断档`);
+    }
+  });
+
+  add('handoff-state', '段落接续：enter / exit 必填', stateBad.length === 0, stateBad.join('；'));
+  if (nameCount === 0) {
+    gates.push({ id: 'handoff-cast', label: '段落接续：新入画人物交代来源', ok: true, detail: 'assets 没写 name，跳过', skipped: true });
+  } else {
+    add('handoff-cast', '段落接续：新入画人物交代来源', castBad.length === 0, castBad.join('；'));
+  }
+  add('handoff-eyeline', '段落接续：视线跨段承接', eyeBad.length === 0, eyeBad.join('；'));
+  add('handoff-sound', '段落接续：底噪不断档', sndLinkBad.length === 0, sndLinkBad.join('；'));
+
   return gates;
 }
 
@@ -446,6 +509,9 @@ export function seed(storyboard, ep, { art = null, cast = null } = {}) {
       dedupeFrames: 0,
       jCut: 0,
       postNote: '',
+      enter: '',
+      exit: '',
+      sound: { carry: [], keep: [] },
       cuts: (seg.cuts ?? []).map((cut, ci) => ({
         qwen: {
           canvas: scenes[seg.sceneIndex - 1]?.id ?? '',

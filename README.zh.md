@@ -66,7 +66,7 @@ flowchart TD
 | [**novel-script**](skills/novel-script) | 给 AI 短剧写剧本：场次 + 节拍流（动作与台词交替），逐集时长按语速确定性折算，钩子前 3 拍冷开场兑现是门，台词本按角色聚合带音色提示词直接对接 TTS。10 道质量门全部脚本检查 |
 | [**novel-staging**](skills/novel-staging) | 给 AI 短剧的每一场排开场站位：先从场景图里认出能站能坐的东西、推算到俯视平面上，再按剧本排谁在哪件东西的哪一侧、坐还是站、面朝哪，程序写出开场走位句交给分镜照抄；报告是能拖动调整的俯视平面，改完导出就是新的 staging.json。8 道质量门全部脚本检查 |
 | [**novel-storyboard**](skills/novel-storyboard) | 给 AI 短剧出分镜：段（一次生成 ≤15 秒）→ 分镜（2–5 秒硬门）→ 分镜图（主图钉 0.00 秒、子图钉各自切点），MiniMax H3 提示词的对齐指令与切点时刻逐字对账；分镜图拿设定图当参考图真出图，export 一键出 H3 / Seedance 投产包。18 道质量门全部脚本检查 |
-| [**comfy-production**](skills/comfy-production) | 把分镜接到本地 ComfyUI：每格的 Qwen-Image-2.1 多图编辑提示词与 `TextEncodeQwenImage21` 插槽顺位、资产的 MOSS 文生图母稿、每段 H3 模式与 `17k+5` 帧、成片总装（尾帧去重裁剪表 + J/L-Cut + ffmpeg + -14 LUFS）。17 道门对着 storyboard.json 逐条对账，秒数一改就报错 |
+| [**comfy-production**](skills/comfy-production) | 把分镜接到本地 ComfyUI：每格的 Qwen-Image-2.1 多图编辑提示词与 `TextEncodeQwenImage21` 插槽顺位、资产的 MOSS 文生图母稿、每段 H3 模式与 `17k+5` 帧、成片总装（尾帧去重裁剪表 + J/L-Cut + ffmpeg + -14 LUFS）。21 道门对着 storyboard.json 逐条对账（其中四道专查段间接续），秒数一改就报错 |
 
 **六个制作阶段的报告都支持中英双语界面**：默认中文，`render --lang en` 出全英文报告（数据内容保持原文）。character-refs 的报告同样内置中英日界面，其他语言现场翻译。
 
