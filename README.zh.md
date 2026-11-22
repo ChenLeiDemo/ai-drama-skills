@@ -158,26 +158,39 @@ node scripts/report-selftest.mjs   # 92 项断言，不起浏览器
 ## 安装
 
 ```bash
-git clone https://github.com/eternityspring/shuohao-skills.git
-cd shuohao-skills
+git clone git@github.com:ChenLeiDemo/ai-drama-skills.git
+cd ai-drama-skills
 ./scripts/install.sh
 ```
 
-安装脚本目前会检测 Claude Code 和 Codex，并为它们创建**软链接**——`git pull` 之后立刻生效，不需要重新安装。Skill 本身不依赖这两个运行时；其他 Agent 可以把对应 skill 目录复制或链接到自己的 skill 目录，也可以直接加载其中的 `SKILL.md`。
+`install.sh` 认识这些 agent——下表每个路径都是各家官方文档里的用户级 skills 目录：
+
+| 参数 | skills 目录 |
+| --- | --- |
+| `--claude` | `~/.claude/skills` |
+| `--codex` | `~/.codex/skills` |
+| `--pi` | `~/.pi/agent/skills` |
+| `--gemini` | `~/.gemini/skills` |
+| `--opencode` | `~/.config/opencode/skills` |
+| `--agents` | `~/.agents/skills`（Agent Skills 规范的通用位置；Zed 只认这个） |
+| `--amp` | `~/.config/agents/skills`（Amp / Replit） |
+
+默认建软链，`git pull` 之后立刻生效。系统不给建软链时——Windows 没有开发者模式就是这样，常见表现是「假装成功」但实际复制了一份——会自动改成合并式复制，并把这件事说明白。
 
 ```bash
-./scripts/install.sh novel-characters   # 只安装某一个
-./scripts/install.sh --codex            # 只安装到 codex
-./scripts/install.sh --uninstall        # 取消软链
+./scripts/install.sh --list              # 列出每个路径和探测结果
+./scripts/install.sh novel-characters    # 只安装某一个
+./scripts/install.sh --pi --claude       # 指定多个目标
+./scripts/install.sh --all               # 所有已知 agent，跳过探测
+./scripts/install.sh --copy              # 强制复制模式
+./scripts/install.sh --uninstall         # 取消软链（真实目录不动）
 ```
 
-也可以手动创建软链接：
+再没有更深的「安装」动作：目录里有 `SKILL.md`、且它落在 agent 扫描的位置，这个 skill 就算装上了。复制、软链、把 agent 配置直接指向 `skills/`，三种等价。
 
 ```bash
-AGENT_SKILLS_DIR=/path/to/your-agent/skills
-ln -s "$PWD/skills/novel-characters" "$AGENT_SKILLS_DIR/novel-characters"
-ln -s "$PWD/skills/novel-characters" ~/.claude/skills/novel-characters
-ln -s "$PWD/skills/novel-characters" ~/.codex/skills/novel-characters
+# 手动
+ln -s "$PWD/skills/comfy-production" ~/.pi/agent/skills/comfy-production
 ```
 
 ## 前置条件

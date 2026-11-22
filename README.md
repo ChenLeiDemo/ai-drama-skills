@@ -157,26 +157,39 @@ No novel needed for this one — real reference images for any character:
 ## Install
 
 ```bash
-git clone https://github.com/eternityspring/shuohao-skills.git
-cd shuohao-skills
+git clone git@github.com:ChenLeiDemo/ai-drama-skills.git
+cd ai-drama-skills
 ./scripts/install.sh
 ```
 
-The installer currently detects Claude Code and Codex and **symlinks** every skill into place — so `git pull` takes effect immediately, with no reinstall. The skills themselves are not tied to either runtime. For any other Agent, copy or symlink the skill directory into its skills directory, or load its `SKILL.md` directly.
+`install.sh` knows these agents — every path below is the user-level skills directory taken from that agent's own docs:
+
+| flag | skills directory |
+| --- | --- |
+| `--claude` | `~/.claude/skills` |
+| `--codex` | `~/.codex/skills` |
+| `--pi` | `~/.pi/agent/skills` |
+| `--gemini` | `~/.gemini/skills` |
+| `--opencode` | `~/.config/opencode/skills` |
+| `--agents` | `~/.agents/skills` (the Agent Skills spec location; Zed reads only this) |
+| `--amp` | `~/.config/agents/skills` (Amp / Replit) |
+
+It links with symlinks so `git pull` takes effect immediately. Where the system refuses to create symlinks — Windows without Developer Mode, which commonly degrades to a silent copy — it switches to a merge copy and says so.
 
 ```bash
-./scripts/install.sh novel-characters   # just one skill
-./scripts/install.sh --codex            # only into codex
-./scripts/install.sh --uninstall        # remove the symlinks
+./scripts/install.sh --list              # show every path and whether it was detected
+./scripts/install.sh novel-characters    # just one skill
+./scripts/install.sh --pi --claude       # pick targets explicitly
+./scripts/install.sh --all               # every known agent, skip detection
+./scripts/install.sh --copy              # force copy mode
+./scripts/install.sh --uninstall         # remove symlinks (real directories are left alone)
 ```
 
-Prefer to do it by hand:
+There is no deeper "install" step: skills load because a directory containing `SKILL.md` sits where the agent scans. Copy, symlink, or point the agent's config at `skills/` — all equivalent.
 
 ```bash
-AGENT_SKILLS_DIR=/path/to/your-agent/skills
-ln -s "$PWD/skills/novel-characters" "$AGENT_SKILLS_DIR/novel-characters"
-ln -s "$PWD/skills/novel-characters" ~/.claude/skills/novel-characters
-ln -s "$PWD/skills/novel-characters" ~/.codex/skills/novel-characters
+# by hand
+ln -s "$PWD/skills/comfy-production" ~/.pi/agent/skills/comfy-production
 ```
 
 ## Requirements
