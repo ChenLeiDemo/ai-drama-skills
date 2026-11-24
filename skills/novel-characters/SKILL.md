@@ -180,7 +180,7 @@ node {baseDir}/scripts/novel-characters.mjs assemble <workdir> \
 node {baseDir}/scripts/novel-characters.mjs validate <cast.json> <book.txt>
 ```
 
-记得带上 `--lang`（Step 0 定的）。检查：结构、`importance` 枚举、**引文逐字**、**出图提示词不含人名**、**语言分工**（人类字段跟随 `lang`、出图/TTS 提示词永远英文）、以及**非内置语言必须带 `ui`**。
+记得带上 `--lang`（Step 0 定的）。检查：结构、`importance` 枚举、**引文逐字**、**出图提示词不含人名**、**语言分工**（人类字段跟随 `lang`；`image.prompt` 写中文长版，反向词与设定图仍是英文）、以及**非内置语言必须带 `ui`**。
 
 **有违规就按报错逐条修，改完重跑，直到通过。** 这四类错模型真的会犯——这套检查就是被真实输出打出来的。
 
@@ -221,7 +221,10 @@ report.html 的样式约定见 `{baseDir}/references/report-style.md`——要�
 ## 边界
 
 - 单次上限 24 块（净覆盖约 93 万字符），超了会明确报 `truncated`，不静默截断
-- 人类可读字段跟随 `--lang`（默认中文）；出图和 TTS 提示词**永远英文**，那些引擎吃英文最稳
+- 人类可读字段跟随 `--lang`（默认中文）
+- `image.prompt` 写**中文长版**（≥300 字，行文规则与三区版式见 `references/prompting.md`）——那条就是投产用的提示词
+- `image.promptLocal` 写英文对照给只吃英文的引擎；`image.negativePrompt` / `image.sheet` / `tags` 仍是英文机器字段
+- TTS 音色提示词**永远英文**，那个引擎吃英文最稳
 - **本 skill 不出图。**`image.sheet` 是给下游的版面指令，版面最容易崩的几处（一张图两个长相、
   为了塞细节把人物压扁、左栏收口）靠提示词里写死的几句压住，见 `references/sheet.md`
 - 想要能实时编辑、边跑边看的交互界面，那是另一个东西，不在这个 skill 里

@@ -94,6 +94,8 @@ const CJK = /[㐀-鿿぀-ヿ가-힯]/;
 const PEOPLE_BAN = /people|human|figure|character|crowd/i;
 
 export const ANCHOR_RANGE = [3, 5];
+/** 中文长提示词的下限：低于这个字数基本还是提纲，不是可投产的母稿。 */
+export const MIN_LONG_PROMPT = 300;
 
 /*
  * 道具尺度参照：AI 经常把手持道具画成家具尺寸——实拍不存在的坑。
@@ -113,7 +115,7 @@ export function gateReport(doc, castNames = null) {
   const scenes = Array.isArray(doc?.scenes) ? doc.scenes : [];
   const props = Array.isArray(doc?.props) ? doc.props : [];
   const bad = {
-    anchors: [], lighting: [], people: [], english: [], names: [], variant: [],
+    anchors: [], lighting: [], people: [], english: [], long: [], names: [], variant: [],
     states: [], scale: [], hands: [], whitebg: [],
   };
   const ids = new Set(scenes.map((s) => s?.id));
@@ -133,14 +135,17 @@ export function gateReport(doc, castNames = null) {
     const neg = s?.image?.negativePrompt ?? '';
     if (!PEOPLE_BAN.test(neg)) bad.people.push(label);
 
-    // 机器字段永远英文（场景的光照 + 道具的状态一起扫）
-    const machine = [
-      s?.image?.prompt, s?.image?.negativePrompt, s?.image?.sheet,
-      ...(s?.lighting ?? []).map((l) => l?.prompt),
-      ...(s?.states ?? []).map((st) => st?.prompt),
-      ...(s?.image?.tags ?? []),
-    ];
+    // 机器字段仍然英文：反向提示词与标签（出图模型按英文负向词吃）
+    const machine = [s?.image?.negativePrompt, ...(s?.image?.tags ?? [])];
     if (machine.some((v) => typeof v === 'string' && CJK.test(v))) bad.english.push(label);
+
+    // 主视角提示词改走中文长版（fisher-moss-prompt-expander 规则 + 三区版式）。
+    // 写中文就必须够长——三百字以下多半是提纲，不是母稿；写英文短版按旧数据兼容，不拦。
+    const prompt = s?.image?.prompt ?? '';
+    if (typeof prompt === 'string' && CJK.test(prompt)) {
+      const len = prompt.replace(/\s+/g, '').length;
+      if (len < MIN_LONG_PROMPT) bad.long.push(`${label}（${len} 字，至少要 ${MIN_LONG_PROMPT}）`);
+    }
 
     // 提示词不许出现角色名（给了 cast 才查）
     if (castNames?.length) {
@@ -176,21 +181,24 @@ export function gateReport(doc, castNames = null) {
     const scaleEn = PROP_SCALES[pr?.scale];
     if (!scaleEn) {
       bad.scale.push(`${label}（scale 必须是 ${Object.keys(PROP_SCALES).join('/')}）`);
-    } else if (![pr?.image?.prompt, pr?.image?.sheet].every((v) => typeof v === 'string' && v.includes(scaleEn))) {
-      bad.scale.push(`${label}（提示词缺「${scaleEn}」）`);
+    } else {
+      const texts = [pr?.image?.prompt, pr?.image?.sheet].filter((v) => typeof v === 'string');
+      const hit = (v) => v.includes(scaleEn) || v.includes(pr.scale);
+      if (!texts.every(hit)) bad.scale.push(`${label}（提示词缺「${scaleEn}」或中文「${pr.scale}」）`);
     }
 
     // 无手：拿着道具的手是最常见的污染，反向提示词必须禁
     if (!HANDS_BAN.test(pr?.image?.negativePrompt ?? '')) bad.hands.push(label);
 
     // 白底：道具参考图要被贴进各种镜头，必须纯白背景可抠
-    if (!/white background/i.test(pr?.image?.sheet ?? '')) bad.whitebg.push(label);
+    if (!/white background|纯白|白底|白色背景/i.test(pr?.image?.sheet ?? '')) bad.whitebg.push(label);
   }
 
   add('anchors', `一致性锚点 ${ANCHOR_RANGE[0]}–${ANCHOR_RANGE[1]} 个`, scenes.length + props.length > 0 && bad.anchors.length === 0, bad.anchors.join('；'));
   add('lighting', '光照状态至少 1 个且落成提示词', scenes.length > 0 && bad.lighting.length === 0, bad.lighting.join('；'));
   add('no-people', '参考图无人：反向提示词禁人（场景与道具都查）', scenes.length + props.length > 0 && bad.people.length === 0, bad.people.join('；'));
-  add('english', '出图提示词全部英文', scenes.length + props.length > 0 && bad.english.length === 0, bad.english.join('；'));
+  add('english', '反向提示词与标签完整英文', scenes.length + props.length > 0 && bad.english.length === 0, bad.english.join('；'));
+  add('prompt-long', `中文提示词够长（≥ ${MIN_LONG_PROMPT} 字）`, bad.long.length === 0, bad.long.join('；'));
   add(
     'no-names',
     '提示词不含角色名',
@@ -329,7 +337,8 @@ const GATE_LABELS_EN = {
   'anchors': 'Consistency anchors, {0}–{1} per asset',
   'lighting': 'At least one lighting state, written out as a prompt',
   'no-people': 'No people in plates: negatives ban people (scenes and props)',
-  'english': 'All image prompts in English',
+  'english': 'Negative prompts and tags in English',
+  'prompt-long': 'Chinese prompts long enough (>= 300 chars)',
   'no-names': 'Prompts carry no character names',
   'variants': 'Variant references complete (variantOf exists and carries changes)',
   'prop-states': 'At least one prop state, written out as a prompt',

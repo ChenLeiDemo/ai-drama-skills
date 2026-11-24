@@ -660,14 +660,30 @@ ok(
   validateCast(CAST, SOURCE, 'en').filter((p) => p.includes('应为英文')).length > 0,
   'lang=en 时中文 voice 字段违规',
 );
-// 机器字段不受 lang 影响，永远必须英文
-const cjkMachine = clone();
-cjkMachine[0].image.prompt = '中文出图提示词';
-for (const l of ['zh', 'en', 'fr']) {
+// 主提示词允许中文，但中文就得是长版；机器字段（反向词 / 设定图）仍必须英文
+{
+  const shortZh = clone();
+  shortZh[0].image.prompt = '中文出图提示词';
+  for (const l of ['zh', 'en', 'fr']) {
+    ok(
+      validateCast(shortZh, SOURCE, l).filter((p) => p.includes('写中文就得写成长版')).length > 0,
+      `lang=${l} 时中文主提示词太短要被拦`,
+    );
+  }
+  const longZh = clone();
+  longZh[0].image.prompt = '一名十九岁的中国少女，' + '甲'.repeat(320);
   ok(
-    validateCast(cjkMachine, SOURCE, l).filter((p) => p.includes('必须英文')).length > 0,
-    `lang=${l} 时 image.prompt 仍必须英文`,
+    validateCast(longZh, SOURCE, 'zh').filter((p) => p.includes('长版')).length === 0,
+    '中文长提示词通过',
   );
+  const cjkNeg = clone();
+  cjkNeg[0].image.negativePrompt = '不要人物';
+  for (const l of ['zh', 'en', 'fr']) {
+    ok(
+      validateCast(cjkNeg, SOURCE, l).filter((p) => p.includes('必须英文')).length > 0,
+      `lang=${l} 时 image.negativePrompt 仍必须英文`,
+    );
+  }
 }
 
 /* ---------------- 角色设定图（左半身像 + 右三视图，一张） ---------------- */

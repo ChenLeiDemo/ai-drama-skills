@@ -465,6 +465,7 @@ export function assetSkeleton(art, cast = null) {
       tier: sc.primary ? 'fine' : 'standard',
       layout: 'sheet',
       brief: sceneBrief(sc),
+      prompt: zhPrompt(sc?.image?.prompt),
     };
   }
   for (const pr of art?.props ?? []) {
@@ -475,6 +476,7 @@ export function assetSkeleton(art, cast = null) {
       tier: 'standard',
       layout: 'sheet',
       brief: propBrief(pr),
+      prompt: zhPrompt(pr?.image?.prompt),
     };
   }
   (cast?.characters ?? []).forEach((c, i) => {
@@ -486,6 +488,7 @@ export function assetSkeleton(art, cast = null) {
       tier: c.importance === 'protagonist' ? 'fine' : 'standard',
       layout: 'sheet',
       brief: charBrief(c),
+      prompt: zhPrompt(c?.image?.prompt),
     };
   });
   return { source: art?.source ?? '', assets };
@@ -507,6 +510,10 @@ const aspectText = (x) => (typeof x === 'string' ? x : joinBits(x?.state, x?.pro
 const anchorText = (a) =>
   typeof a === 'string' ? a : joinBits(a?.name, a?.desc).replace('；', '：');
 const asList = (v) => (Array.isArray(v) ? v : v ? [v] : []);
+
+// 上游 novel-art / novel-characters 已按 expander 规则写好中文长提示词，直接拿来用，不再让人手贴
+const CJK_TEXT = /[㐀-鿿]/;
+const zhPrompt = (v) => (typeof v === 'string' && CJK_TEXT.test(v) ? v.trim() : '');
 
 function sceneBrief(sc) {
   const anchors = asList(sc?.anchors).map(anchorText).filter(Boolean);

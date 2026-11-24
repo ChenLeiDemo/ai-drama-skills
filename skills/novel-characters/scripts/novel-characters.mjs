@@ -472,7 +472,11 @@ const KANA = /[぀-ヿ]/;
 
 const PERSONA_STRINGS = ['gender', 'ageRange', 'identity', 'appearance', 'temperament', 'motivation', 'arc'];
 /** 机器输入，永远英文——图像和 TTS 引擎都吃英文最稳，跟报告语言无关。 */
-const MACHINE_FIELDS = { image: ['prompt', 'negativePrompt', 'sheet'], voice: ['prompt'] };
+// image.prompt 现在写中文长版（fisher-moss-prompt-expander 规则 + 三区版式），
+// 剩下这两项仍是喂给模型的英文机器字段。
+const MACHINE_FIELDS = { image: ['negativePrompt', 'sheet'], voice: ['prompt'] };
+/** 中文长提示词的下限：三百字以下基本是提纲，不是可投产的母稿。 */
+export const MIN_LONG_PROMPT = 300;
 /** 给人读的，跟随报告语言。 */
 const HUMAN_VOICE_FIELDS = ['timbre', 'pitch', 'pace', 'accent', 'emotion', 'referenceHint'];
 
@@ -639,6 +643,13 @@ export function validateCast(characters, sourceText, lang = DEFAULT_LANG) {
     if (Array.isArray(image?.tags)) {
       for (const t of image.tags) {
         if (typeof t === 'string' && CJK.test(t)) at(name, `image.tags 必须英文，但「${t}」含中日韩字符`);
+      }
+    }
+    // 中文主提示词必须是长版：写两句话等于把展开交给出图模型，出来就是换脸
+    if (typeof image?.prompt === 'string' && CJK.test(image.prompt)) {
+      const len = image.prompt.replace(/\s+/g, '').length;
+      if (len < MIN_LONG_PROMPT) {
+        at(name, `image.prompt 写中文就得写成长版（≥ ${MIN_LONG_PROMPT} 字），现在 ${len} 字`);
       }
     }
     // 只有这三种能可靠自动判别，其他语言不猜、跳过——误报比漏报更烦人。

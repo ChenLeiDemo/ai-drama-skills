@@ -131,7 +131,7 @@ ok(castNamesOf({ characters: [] }).length === 0, '空 cast 不炸');
 
 eq(validateArt(FIXTURE, NAMES).length, 0, '自带样例通过校验（含角色名检查）');
 ok(gateReport(FIXTURE, NAMES).every((g) => g.ok), '样例全部质量门通过');
-eq(gateReport(FIXTURE).length, 10, '质量门共 10 道（场景 6 + 道具 4）');
+eq(gateReport(FIXTURE).length, 11, '质量门共 11 道（场景 6 + 道具 4 + 中文长提示词）');
 
 /* ---------------- 质量门逐项击穿 ---------------- */
 // 每一道门都要证明它真的会拦——不然就是永远为真的假测试
@@ -164,16 +164,34 @@ eq(ANCHOR_RANGE.join('-'), '3-5', '锚点范围 3–5');
   ok(!gate(d, 'no-people').ok, '反向提示词没禁人被拦——环境参考图必须空景');
 }
 
-// G5 提示词英文
+// G5 提示词：中文长版走 prompt-long，机器字段仍要英文
 {
   const d = clone();
   d.scenes[0].image.prompt = '一条老木船的客舱';
-  ok(!gate(d, 'english').ok, '主提示词写中文被拦');
+  ok(!gate(d, 'prompt-long').ok, '中文提示词太短（提纲）被拦');
+  ok(gate(d, 'english').ok, '主提示词写中文不再算英文门违规');
+}
+{
+  const d = clone();
+  d.scenes[0].image.prompt = '甲'.repeat(400);
+  ok(gate(d, 'prompt-long').ok, '中文长提示词达到 300 字就过');
+}
+{
+  const d = clone();
+  d.scenes[0].image.negativePrompt = '不要人物';
+  ok(!gate(d, 'english').ok, '反向提示词写中文仍被英文门拦');
 }
 {
   const d = clone();
   d.scenes[0].lighting[0].prompt = '浓雾平光';
-  ok(!gate(d, 'english').ok, '光照提示词写中文也被拦');
+  ok(gate(d, 'english').ok, '光照状态可以写中文（它是内容不是机器字段）');
+}
+{
+  const d = clone();
+  d.props[0].image.prompt = '纯白底，手持级的旧皮箱，' + '乙'.repeat(320);
+  ok(gate(d, 'prompt-long').ok, '道具中文长提示词也走同一道门');
+  ok(gate(d, 'prop-scale').ok, '中文尺度词「手持级」认作尺度参照');
+  ok(gate(d, 'prop-white').ok, '「纯白底」认作白底');
 }
 
 // G6 提示词不含角色名
@@ -298,7 +316,7 @@ ok(/e\.key === 'Escape'/.test(html), 'Esc 关闭弹层');
   ok(withImg.includes('class="zoom" data-src="images/x-sheet.png"'), '出图后图片可点，弹层拿到地址');
   ok(withImg.includes('cursor:zoom-in'), '鼠标提示可放大');
 }
-eq((html.match(/<li class="ok">/g) || []).length, 10, '10 道质量门全 ✓');
+eq((html.match(/<li class="ok">/g) || []).length, 11, '11 道质量门全 ✓');
 ok(html.includes('gatepill pass'), '页眉徽章通过态');
 ok(html.includes('未提供 cast.json'), '报告如实标注角色名检查被跳过');
 
@@ -387,7 +405,7 @@ eq(FIXTURE.props.length, 2, '样例带两件叙事道具');
 {
   const d = clone();
   d.props[0].states[0].prompt = '合上的皮箱';
-  ok(!gate(d, 'english').ok, '道具状态提示词写中文被英文门拦');
+  ok(gate(d, 'english').ok, '道具状态可以写中文');
 }
 {
   const d = clone();
