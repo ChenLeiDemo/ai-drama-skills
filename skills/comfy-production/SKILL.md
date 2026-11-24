@@ -61,16 +61,36 @@ metadata:
 
 **一次做一集**。`production.json` 是单集的，`ep` 与 storyboard 的集号必须对得上。
 
+### Step 0.5 — 先出资产母稿（不用等分镜）
+
+上游 `novel-art` / `novel-characters` 给的 `image.prompt` / `image.sheet` 是**英文短提示词**，给通用文生图用的。MOSS 要的是 1500~2500 字中文连贯段落——两者不是翻译关系，是重写关系（结构与信息密度都不同，见 `references/moss-t2i.md`）。
+
+所以资产母稿在**分镜之前**就能做，也必须先做：设定板出来了，后面的 Qwen 挂图才有东西可挂。
+
+```bash
+# 1) 从 art.json / cast.json 起资产骨架（kind / name / sheet / tier 自动填）
+node {baseDir}/scripts/comfy-production.mjs assets art.json --cast cast.json > production-assets.json
+
+# 2) 给要出设定板的资产写 moss（fine 档 1500~2500 字，standard 档 350~600 字）
+
+# 3) 体检：篇幅档位 + 还差谁
+node {baseDir}/scripts/comfy-production.mjs moss production-assets.json --require S01,C01,P01
+```
+
+分级是自动的：`primary` 场景与 `importance: protagonist` 的角色起 `fine` 档，其余 `standard`。`--require` 只把点名的资产算「必须有」，没点名的缺了不报。
+
 ### Step 1 — seed 工作底稿
 
 ```bash
 node {baseDir}/scripts/comfy-production.mjs seed storyboard.json --ep 1 \
-  --art art.json --cast cast.json > production.json
+  --assets production-assets.json > production.json
 ```
 
 出来的是骨架：每段的 `id`、`h3Mode: I2VA`、以及每切一条空的 `qwen`（`canvas` 已按 `sceneIndex` 填成场景 id，`refs` 按画内人物道具预填）。**骨架里没有秒数**——秒数只在 storyboard 里，存两份必然漂。
 
-### Step 2 — 逐段填
+给了 `--assets` 就直接吃 Step 0.5 那份，母稿与中文名一起带过来；没给就从 `--art` / `--cast` 现建（母稿为空）。**不要用 `--art` 覆盖已经写过母稿的资产**——重建会把 `moss` 抹掉。
+
+### Step 2 — 逐段填（分镜出来之后）
 
 每段要填的东西：
 

@@ -9,8 +9,10 @@ import { fileURLToPath } from 'node:url';
 import { tmpdir } from 'node:os';
 import { spawnSync } from 'node:child_process';
 import {
+  assetSkeleton,
   cutStarts,
   descText,
+  mossReport,
   dialogueChars,
   fieldText,
   gateReport,
@@ -316,6 +318,41 @@ const withH3 = (sb, segId, fn) => {
   expectFail(baseProd(), 'music-spec', sbMus);
 }
 
+/* ---------------- 资产骨架与母稿体检 ---------------- */
+{
+  const art = {
+    scenes: [
+      { id: 'S01', name: '渡船船舱', primary: true },
+      { id: 'S02', name: '栈桥' },
+    ],
+    props: [{ id: 'P01', name: '竹篙' }],
+  };
+  const cast = { characters: [{ name: '阿禾', importance: 'protagonist' }, { name: '沈知微' }] };
+  const sk = assetSkeleton(art, cast);
+  eq(Object.keys(sk.assets).join(), 'S01,S02,P01,C01,C02', '骨架编号：场景→道具→角色');
+  eq(sk.assets.S01.tier, 'fine', '主场景起 fine 档');
+  eq(sk.assets.S02.tier, 'standard', '次要场景起 standard 档');
+  eq(sk.assets.C01.tier, 'fine', '主角起 fine 档');
+  eq(sk.assets.C02.tier, 'standard', '配角起 standard 档');
+  eq(sk.assets.S01.name, '渡船船舱', '带中文名，handoff-cast 要用');
+  eq(sk.assets.C01.moss, '', '母稿留空，由人写');
+  eq(sk.assets.S01.sheet, 'images/渡船船舱-sheet.png', '设定板路径按名字推');
+
+  sk.assets.S01.moss = '甲'.repeat(1600);
+  sk.assets.P01.moss = '乙'.repeat(100);
+  const r = mossReport(sk);
+  eq(r.rows.length, 5, '逐个资产一行');
+  eq(r.missing.join(), 'S02,C01,C02', '缺母稿清单');
+  eq(r.bad.length, 1, 'P01 篇幅越界算一处');
+  ok(r.bad[0].includes('P01'), '越界点名 P01');
+  eq(mossReport(sk, ['S01']).missing.join(), '', '--require 只要求 S01 时不算缺');
+
+  const withAssets = seed(SB, 1, { assets: sk.assets });
+  eq(withAssets.assets.S01.moss.length, 1600, 'seed 吃掉资产母稿，不重建');
+  eq(withAssets.assets.C01.name, '阿禾', 'seed 保留资产中文名');
+  eq(Object.keys(seed(SB, 1, { art, cast }).assets).join(), 'S01,S02,P01,C01,C02', '没给 --assets 时从 art/cast 现建');
+}
+
 /* ---------------- 段落接续 ---------------- */
 {
   const noEnter = baseProd();
@@ -442,6 +479,29 @@ const withH3 = (sb, segId, fn) => {
     assert.notEqual(noSb.status, 0, '不给 --storyboard 必须失败');
     ok(noSb.stderr.includes('--storyboard'), '缺 --storyboard 时说清原因');
     passed += 1;
+
+    const artPath = join(dir, 'art.json');
+    writeFileSync(
+      artPath,
+      JSON.stringify({ scenes: [{ id: 'S01', name: '渡船船舱', primary: true }], props: [{ id: 'P01', name: '竹篙' }] }),
+      'utf8',
+    );
+    const a = spawnSync(process.execPath, [SCRIPT, 'assets', artPath], { encoding: 'utf8' });
+    eq(a.status, 0, `assets 退出码 0：${a.stderr}`);
+    const skel = JSON.parse(a.stdout);
+    eq(skel.assets.S01.tier, 'fine', 'assets 子命令起出 fine 档');
+    eq(skel.assets.P01.kind, 'prop', 'assets 子命令认道具');
+
+    const skelPath = join(dir, 'production-assets.json');
+    writeFileSync(skelPath, a.stdout, 'utf8');
+    const mo = spawnSync(process.execPath, [SCRIPT, 'moss', skelPath], { encoding: 'utf8' });
+    eq(mo.status, 0, 'moss 没越界时退出码 0');
+    ok(mo.stdout.includes('待写母稿'), 'moss 列出待写的资产');
+
+    skel.assets.S01.moss = '甲'.repeat(10);
+    writeFileSync(skelPath, JSON.stringify(skel), 'utf8');
+    const mo2 = spawnSync(process.execPath, [SCRIPT, 'moss', skelPath, '--require', 'S01'], { encoding: 'utf8' });
+    eq(mo2.status, 1, 'moss 篇幅越界时退出码 1');
 
     const out = join(dir, 'export');
     const e = spawnSync(process.execPath, [SCRIPT, 'export', prodPath, '--storyboard', FIX, '--out', out], { encoding: 'utf8' });

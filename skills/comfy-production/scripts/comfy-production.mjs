@@ -479,28 +479,76 @@ export function gateStats(gates) {
 /* seed                                                                 */
 /* ------------------------------------------------------------------ */
 
-export function seed(storyboard, ep, { art = null, cast = null } = {}) {
-  const epData = (storyboard?.episodes ?? []).find((e) => Number(e?.ep) === Number(ep));
-  if (!epData) throw new Error(`storyboard 里没有第 ${ep} 集`);
-  const scenes = art?.scenes ?? [];
+// 阶段二：从 art.json / cast.json 起资产骨架。上游的 image.prompt 是英文短提示词，
+// 不能直接喂 MOSS——母稿是重新组织的中文长段落，这里只留齿位，内容由人写。
+export function assetSkeleton(art, cast = null) {
   const assets = {};
-  for (const s of scenes) {
-    assets[s.id] = { kind: 'scene', sheet: `images/${s.name}-sheet.png` };
+  for (const sc of art?.scenes ?? []) {
+    assets[sc.id] = {
+      kind: 'scene',
+      name: sc.name ?? '',
+      sheet: `images/${sc.name}-sheet.png`,
+      tier: sc.primary ? 'fine' : 'standard',
+      moss: '',
+    };
   }
   for (const pr of art?.props ?? []) {
-    assets[pr.id] = { kind: 'prop', sheet: `images/${pr.name}-sheet.png` };
+    assets[pr.id] = {
+      kind: 'prop',
+      name: pr.name ?? '',
+      sheet: `images/${pr.name}-sheet.png`,
+      tier: 'standard',
+      moss: '',
+    };
   }
   (cast?.characters ?? []).forEach((c, i) => {
     const id = `C${String(i + 1).padStart(2, '0')}`;
-    assets[id] = { kind: 'character', sheet: `images/${c.name}-sheet.png` };
+    assets[id] = {
+      kind: 'character',
+      name: c.name ?? '',
+      sheet: `images/${c.name}-sheet.png`,
+      tier: c.importance === 'protagonist' ? 'fine' : 'standard',
+      moss: '',
+    };
   });
+  return { source: art?.source ?? '', assets };
+}
+
+// 母稿体检：篇幅档位 + 该写还没写的。requireIds 给了就只把这几个算「必须有」。
+export function mossReport(doc, requireIds = null) {
+  const assets = doc?.assets ?? {};
+  const rows = [];
+  const bad = [];
+  const missing = [];
+  for (const [id, a] of Object.entries(assets)) {
+    const moss = str(a?.moss).trim();
+    const tier = a?.tier ?? 'standard';
+    const len = moss.length;
+    rows.push({ id, kind: a?.kind ?? '?', tier, len });
+    if (!moss) {
+      if (!requireIds || requireIds.includes(id)) missing.push(id);
+      continue;
+    }
+    const range = MOSS_TIERS[tier];
+    if (!range) bad.push(`${id} 的 tier「${tier}」只能是 fine / standard`);
+    else if (len < range[0] || len > range[1]) bad.push(`${id} ${tier} 档要 ${range[0]}~${range[1]} 字，实际 ${len}`);
+  }
+  return { rows, bad, missing };
+}
+
+export function seed(storyboard, ep, { art = null, cast = null, assets = null } = {}) {
+  const epData = (storyboard?.episodes ?? []).find((e) => Number(e?.ep) === Number(ep));
+  if (!epData) throw new Error(`storyboard 里没有第 ${ep} 集`);
+  const scenes = art?.scenes ?? [];
+  // 阶段二做过资产母稿就直接用那份，别再从 art/cast 重建——重建会把 moss 抹掉
+  const assetMap = assets?.assets ?? (assets && typeof assets === 'object' ? assets : assetSkeleton(art, cast).assets);
   return {
     source: storyboard?.source ?? '',
     ep: Number(ep),
     fps: DEFAULT_FPS,
     aspectRatio: storyboard?.aspectRatio ?? '16:9',
     params: { charsPerSecond: 4, frameTolerance: 2, maxQwenRefs: 5 },
-    assets,
+    assets: assetMap,
     segments: (epData.segments ?? []).map((seg) => ({
       id: seg.id,
       h3Mode: 'I2VA',
@@ -685,7 +733,9 @@ function flag(args, name, fallback = null) {
 
 function usage() {
   console.log(`用法：
-  node comfy-production.mjs seed <storyboard.json> --ep 1 [--art art.json] [--cast cast.json] > production.json
+  node comfy-production.mjs assets <art.json> [--cast cast.json] > production-assets.json
+  node comfy-production.mjs moss <production-assets.json> [--require S01,C01]
+  node comfy-production.mjs seed <storyboard.json> --ep 1 [--assets production-assets.json] [--art art.json] [--cast cast.json] > production.json
   node comfy-production.mjs validate <production.json> --storyboard <storyboard.json>
   node comfy-production.mjs export <production.json> --storyboard <storyboard.json> --out <dir>
   node comfy-production.mjs post <production.json> --storyboard <storyboard.json> [--out <dir>]`);
@@ -696,12 +746,43 @@ function main(argv) {
   const file = rest[0];
   if (!cmd || !file || cmd === '-h' || cmd === '--help') return usage();
 
+  // 阶段二：资产骨架与母稿体检，不需要 storyboard
+  if (cmd === 'assets') {
+    const art = readJson(file);
+    const castPath = flag(rest, '--cast');
+    const cast = castPath ? readJson(castPath) : null;
+    console.log(JSON.stringify(assetSkeleton(art, cast), null, 2));
+    return;
+  }
+
+  if (cmd === 'moss') {
+    const doc = readJson(file);
+    const req = flag(rest, '--require');
+    const requireIds = req ? req.split(',').map((x) => x.trim()).filter(Boolean) : null;
+    const r = mossReport(doc, requireIds);
+    for (const row of r.rows) {
+      console.log(`${row.len ? '✓' : '·'} ${row.id.padEnd(5)} ${String(row.kind).padEnd(9)} ${row.tier.padEnd(8)} ${row.len} 字`);
+    }
+    if (r.missing.length) console.log(`\n待写母稿：${r.missing.join(', ')}`);
+    if (r.bad.length) {
+      console.log(`\n✗ ${r.bad.join('\n✗ ')}`);
+      process.exitCode = 1;
+    } else {
+      console.log(`\n${r.rows.length} 个资产，${r.rows.filter((x) => x.len).length} 个有母稿，0 个篇幅越界`);
+    }
+    return;
+  }
+
   if (cmd === 'seed') {
     const sb = readJson(file);
-    const art = flag(rest, '--art') ? readJson(flag(rest, '--art')) : null;
-    const cast = flag(rest, '--cast') ? readJson(flag(rest, '--cast')) : null;
+    const artPath = flag(rest, '--art');
+    const castPath = flag(rest, '--cast');
+    const assetsPath = flag(rest, '--assets');
+    const art = artPath ? readJson(artPath) : null;
+    const cast = castPath ? readJson(castPath) : null;
+    const assets = assetsPath ? readJson(assetsPath) : null;
     const ep = flag(rest, '--ep', 1);
-    console.log(JSON.stringify(seed(sb, ep, { art, cast }), null, 2));
+    console.log(JSON.stringify(seed(sb, ep, { art, cast, assets }), null, 2));
     return;
   }
 

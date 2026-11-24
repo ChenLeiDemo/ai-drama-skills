@@ -16,8 +16,12 @@
 ## 四步
 
 ```bash
-# 1) 起骨架（可选 --art / --cast 预填资产与画布）
-node scripts/comfy-production.mjs seed storyboard.json --ep 1 --art art.json --cast cast.json > production.json
+# 0) 资产母稿（分镜之前就能做，MOSS 用）
+node scripts/comfy-production.mjs assets art.json --cast cast.json > production-assets.json
+node scripts/comfy-production.mjs moss production-assets.json --require S01,C01,P01
+
+# 1) 起骨架（吃上面那份，母稿与中文名一起带过来）
+node scripts/comfy-production.mjs seed storyboard.json --ep 1 --assets production-assets.json > production.json
 
 # 2) 逐段填 h3Mode / qwen / tailFrom / assets.moss
 
