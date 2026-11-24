@@ -137,6 +137,15 @@ node {baseDir}/scripts/comfy-production.mjs validate production.json --storyboar
 
 **有违规逐条修，改完重跑，直到 0 违规。** 警告可以带着交付，但要说清。
 
+`frame-grid` 不过时不用手算——交给它提议：
+
+```bash
+node {baseDir}/scripts/comfy-production.mjs retime storyboard.json --ep 1          # 只出提议
+node {baseDir}/scripts/comfy-production.mjs retime storyboard.json --ep 1 --write  # 确认后写回
+```
+
+它把每段的切秒数均摊挪几帧，让段总帧数落到 `17k+5`；有切会被推到 2~5 秒之外就报错不写，让你回去拆段。写回后记得重跑 `novel-storyboard validate`——H3 提示词里的切点时刻要跟着重算。
+
 ### Step 4 — 导出投产包
 
 ```bash

@@ -24,7 +24,8 @@ node scripts/comfy-production.mjs seed storyboard.json --ep 1 --assets productio
 
 # 2) 逐段填 h3Mode / qwen / tailFrom / enter / exit / sound，并贴回 assets.prompt
 
-# 3) 校验（20 道门，必须给 --storyboard）
+# 3) 校验（20 道门，必须给 --storyboard）；帧数不合法就让它提议怎么挪
+node scripts/comfy-production.mjs retime storyboard.json --ep 1 [--write]
 node scripts/comfy-production.mjs validate production.json --storyboard storyboard.json
 
 # 4) 导出投产包：每段一张卡 + 资产母稿 + 后期总装

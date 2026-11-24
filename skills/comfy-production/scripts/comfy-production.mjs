@@ -455,6 +455,57 @@ export function gateStats(gates) {
 
 // 阶段二：从 art.json / cast.json 起资产骨架。上游的 image.prompt 是英文短提示词，
 // 不能直接喂 MOSS——母稿是重新组织的中文长段落，这里只留齿位，内容由人写。
+// 把一段的切秒数挪几帧，让总帧数落到 17k+5 的格点上。
+// 只挪秒数，不改切的数量与顺序；改动均摊到各切，单切超出 2~5 秒就报出来让人决定。
+export function retimeProposal(board, ep, { fps = DEFAULT_FPS, minCut = 2, maxCut = 5 } = {}) {
+  const epData = (board?.episodes ?? []).find((e) => Number(e?.ep) === Number(ep));
+  if (!epData) throw new Error(`storyboard 里没有第 ${ep} 集`);
+  const rows = [];
+  for (const seg of epData.segments ?? []) {
+    const cuts = seg.cuts ?? [];
+    if (!cuts.length) continue;
+    const nowFrames = Math.round(cuts.reduce((a, c) => a + (Number(c?.seconds) || 0), 0) * fps);
+    const target = nearestLegal(nowFrames);
+    const delta = target - nowFrames;
+    const per = Math.trunc(delta / cuts.length);
+    const rem = delta - per * cuts.length;
+    const next = cuts.map((c, i) => {
+      const f = Math.round((Number(c?.seconds) || 0) * fps) + per + (i === cuts.length - 1 ? rem : 0);
+      return Math.round((f / fps) * 1000) / 1000;
+    });
+    const outOfRange = next
+      .map((v, i) => ({ v, i }))
+      .filter(({ v }) => v < minCut - 0.001 || v > maxCut + 0.001)
+      .map(({ v, i }) => `#${i + 1} ${v}s`);
+    rows.push({
+      id: seg.id,
+      nowFrames,
+      targetFrames: target,
+      deltaFrames: delta,
+      nowSeconds: r2(cuts.reduce((a, c) => a + (Number(c?.seconds) || 0), 0)),
+      targetSeconds: r2(target / fps),
+      next,
+      outOfRange,
+    });
+  }
+  return rows;
+}
+
+/** 把提议写回 board（原地改 cuts[].seconds）。 */
+export function applyRetime(board, ep, rows) {
+  const epData = (board?.episodes ?? []).find((e) => Number(e?.ep) === Number(ep));
+  if (!epData) throw new Error(`storyboard 里没有第 ${ep} 集`);
+  const byId = new Map(rows.map((r) => [r.id, r]));
+  for (const seg of epData.segments ?? []) {
+    const row = byId.get(seg.id);
+    if (!row) continue;
+    seg.cuts.forEach((cut, i) => {
+      if (typeof row.next[i] === 'number') cut.seconds = row.next[i];
+    });
+  }
+  return board;
+}
+
 export function assetSkeleton(art, cast = null) {
   const assets = {};
   for (const sc of art?.scenes ?? []) {
@@ -760,6 +811,7 @@ function flag(args, name, fallback = null) {
 
 function usage() {
   console.log(`用法：
+  node comfy-production.mjs retime <storyboard.json> [--ep 1] [--write]   段时长吸附到 17k+5
   node comfy-production.mjs assets <art.json> [--cast cast.json] [--md] > production-assets.json
   node comfy-production.mjs seed <storyboard.json> --ep 1 [--assets production-assets.json] [--art art.json] [--cast cast.json] > production.json
   node comfy-production.mjs validate <production.json> --storyboard <storyboard.json>
@@ -771,6 +823,41 @@ function main(argv) {
   const [cmd, ...rest] = argv;
   const file = rest[0];
   if (!cmd || !file || cmd === '-h' || cmd === '--help') return usage();
+
+  // 时长吸附：只提议，不静默改；--write 才写回
+  if (cmd === 'retime') {
+    const board = readJson(file);
+    const ep = flag(rest, '--ep', 1);
+    const rows = retimeProposal(board, ep);
+    const bad = rows.filter((r) => r.outOfRange.length);
+    for (const r of rows) {
+      const mark = r.deltaFrames === 0 ? '✓' : '→';
+      console.log(
+        `${mark} ${r.id}  ${r.nowSeconds}s (${r.nowFrames}f) → ${r.targetSeconds}s (${r.targetFrames}f)  改动 ${r.deltaFrames >= 0 ? '+' : ''}${r.deltaFrames} 帧`,
+      );
+    }
+    if (bad.length) {
+      console.log('');
+      for (const r of bad) console.log(`! ${r.id} 吸附后这些切会超出 2~5 秒：${r.outOfRange.join(' ')}——先拆段或改切数`);
+    }
+    if (!rest.includes('--write')) {
+      console.log('');
+      console.log('只是提议。确认后加 --write 写回文件（建议先 git commit）。');
+      if (bad.length) process.exitCode = 1;
+      return;
+    }
+    if (bad.length) {
+      console.log('');
+      console.log('有切会越界，没写回。');
+      process.exitCode = 1;
+      return;
+    }
+    applyRetime(board, ep, rows);
+    writeFileSync(file, `${JSON.stringify(board, null, 2)}\n`, 'utf8');
+    console.log('');
+    console.log(`已写回 ${file}。记得重跑 novel-storyboard validate——H3 提示词里的切点时刻要跟着重算。`);
+    return;
+  }
 
   // 阶段二：资产骨架与资产生图单，不需要 storyboard
   if (cmd === 'assets') {

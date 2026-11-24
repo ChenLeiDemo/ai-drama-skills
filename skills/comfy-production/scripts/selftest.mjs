@@ -11,7 +11,9 @@ import { spawnSync } from 'node:child_process';
 import {
   assetSkeleton,
   cutStarts,
+  applyRetime,
   renderAssetSheet,
+  retimeProposal,
   descText,
   dialogueChars,
   fieldText,
@@ -385,6 +387,43 @@ const withH3 = (sb, segId, fn) => {
   eq(withAssets.assets.C01.name, '阿禾', 'seed 保留资产中文名');
   eq(withAssets.assets.S01.layout, 'sheet', 'seed 保留版面标记');
   eq(Object.keys(seed(SB, 1, { art, cast }).assets).join(), 'S01,S02,P01,C01,C02', '没给 --assets 时从 art/cast 现建');
+}
+
+/* ---------------- 时长吸附 ---------------- */
+{
+  const board = {
+    episodes: [
+      {
+        ep: 1,
+        segments: [
+          { id: 'E01-01', cuts: [{ seconds: 3 }, { seconds: 5 }, { seconds: 4 }, { seconds: 3 }] }, // 15s = 360f
+          { id: 'E01-02', cuts: [{ seconds: 4 }, { seconds: 4 }] }, // 8s = 192f 已经合法
+        ],
+      },
+    ],
+  };
+  const rows = retimeProposal(board, 1);
+  eq(rows[0].nowFrames, 360, '15 秒 = 360 帧');
+  eq(rows[0].targetFrames, 362, '360 吸附到 362（17k+5）');
+  eq(rows[0].deltaFrames, 2, '要加 2 帧');
+  eq(rows[0].targetSeconds, 15.08, '目标时长 15.08s');
+  eq(rows[1].deltaFrames, 0, '已经合法的段不动');
+  eq(rows[0].outOfRange.length, 0, '均摊后都在 2~5 秒内');
+  eq(rows[0].next.reduce((a, b) => a + b, 0).toFixed(2), '15.08', '各切加起来等于目标');
+
+  applyRetime(board, 1, rows);
+  eq(board.episodes[0].segments[0].cuts.reduce((a, c) => a + c.seconds, 0).toFixed(2), '15.08', '写回后总时长对');
+  eq(board.episodes[0].segments[1].cuts[0].seconds, 4, '合法的段没被改');
+
+  // 越界：5 秒的切再加帧会超上限
+  const tight = {
+    episodes: [{ ep: 1, segments: [{ id: 'E01-01', cuts: [{ seconds: 5 }, { seconds: 5 }, { seconds: 5 }] }] }],
+  };
+  const t = retimeProposal(tight, 1);
+  ok(t[0].outOfRange.length > 0, '三切都满 5 秒时再加帧会越界，明确报出来而不是静默改成 5.08 秒');
+
+  assert.throws(() => retimeProposal(board, 9), /没有第 9 集/);
+  passed += 1;
 }
 
 /* ---------------- 段落接续 ---------------- */
