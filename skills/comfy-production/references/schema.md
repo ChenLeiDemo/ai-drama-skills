@@ -35,9 +35,10 @@
 | `name` | string? | 人物/场景的中文名。`handoff-cast` 用它核对 `enter` 里有没有点名；没写就跳过那道门 |
 | `kind` | enum | `scene` / `character` / `prop`。`image_1` 必须指向 `scene`，Ref2VA 的 `lockSheet` 必须指向 `character` |
 | `sheet` | string | 设定板文件路径，导出卡片时写进插槽清单 |
-| `tier` | enum | `fine`（1500~2500 字）/ `standard`（350~600 字）。只在写了 `moss` 时才查 |
+| `tier` | enum | `fine`（1500~2500 字）/ `standard`（350~600 字）。`assets` 按场景 primary / 角色 protagonist 自动判定，作为篇幅提示写进资产生图单 |
 | `layout` | enum | `sheet`（设定板，默认）或 `single`（单图，海报帧那类）。`sheet` 会查母稿有没有交代版面分区 |
-| `moss` | string | MOSS 文生图母稿，中文连贯段落。写法见 `moss-t2i.md` |
+| `brief` | string | 素材摘要（来自 art/cast 的 summary / anchors / lighting / oneLiner），给 expander 当输入，`assets` 自动填 |
+| `prompt` | string | 贴回来的中文长提示词（expander 的输出）。导出时原样印进资产生图单；不贴就留占位 |
 
 ## 段（segments）
 

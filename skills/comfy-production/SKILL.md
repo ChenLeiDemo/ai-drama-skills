@@ -6,7 +6,7 @@ description: |
   并排好 TextEncodeQwenImage21 的 image_1..N 插槽，为 CH/SC/PR 资产写 MOSS 文生图母稿，为每段补 MiniMax H3
   的模式（T2VA/I2VA/FL2VA/L2VA/Ref2VA）与 ComfyUI 量化版帧数（17k+5），最后导出成片总装包（尾帧去重裁剪表
   + J/L-Cut + ffmpeg 命令 + -14 LUFS 归一）。
-  22 道质量门全部由脚本对着 storyboard 逐条对账，秒数、节拍、画内人物一改就报错；其中四道专查段与段之间的接续。
+  20 道质量门全部由脚本对着 storyboard 逐条对账，秒数、节拍、画内人物一改就报错；其中四道专查段与段之间的接续。
   不出图、不改戏、不改分镜结构——那些是上游的事。
   Use when asked to 出 ComfyUI 提示词、垫图、多图参考、Qwen 编辑提示词、MOSS 母稿、H3 提示词、帧数换算、后期总装。
 allowed-tools:
@@ -61,23 +61,23 @@ metadata:
 
 **一次做一集**。`production.json` 是单集的，`ep` 与 storyboard 的集号必须对得上。
 
-### Step 0.5 — 先出资产母稿（不用等分镜）
+### Step 0.5 — 先出资产提示词（不用等分镜）
 
-上游 `novel-art` / `novel-characters` 给的 `image.prompt` / `image.sheet` 是**英文短提示词**，给通用文生图用的。MOSS 要的是 1500~2500 字中文连贯段落——两者不是翻译关系，是重写关系（结构与信息密度都不同，见 `references/moss-t2i.md`）。
+上游 `novel-art` / `novel-characters` 给的是**英文短提示词**（`image.prompt`）和三区**设定板版式**（左 34% 半身像 / 右上三视图 / 右下细节条）。中文长提示词不在这里手写——交给 [`fisher-moss-prompt-expander`](https://github.com/Work-Fisher/fisher-moss-prompt-expander)。
 
-所以资产母稿在**分镜之前**就能做，也必须先做：设定板出来了，后面的 Qwen 挂图才有东西可挂。
+本技能只做**清单与交接**：把每份资产的编号、类型、设定板路径、篇幅档位、版式句、素材摘要排成一张单子。
 
 ```bash
-# 1) 从 art.json / cast.json 起资产骨架（kind / name / sheet / tier 自动填）
-node {baseDir}/scripts/comfy-production.mjs assets art.json --cast cast.json > production-assets.json
+# 1) 出资产单：每份资产一节（篇幅 + 版式 + 素材 + 待贴位）
+node {baseDir}/scripts/comfy-production.mjs assets art.json --cast cast.json --md > 资产生图单.md
 
-# 2) 给要出设定板的资产写 moss（fine 档 1500~2500 字，standard 档 350~600 字）
+# 2) 逐节交给 expander 扩写（它会读 references 里的构图/材质/手部模块）
+#    使用 $fisher-moss-prompt-expander：按下面的版式扩写这份素材……只输出一个 text 代码块。
 
-# 3) 体检：篇幅档位 + 还差谁
-node {baseDir}/scripts/comfy-production.mjs moss production-assets.json --require S01,C01,P01
+# 3) 把输出贴回 assets.<编号>.prompt（production.json 里），导出时才不会被冲掉
 ```
 
-分级是自动的：`primary` 场景与 `importance: protagonist` 的角色起 `fine` 档，其余 `standard`。`--require` 只把点名的资产算「必须有」，没点名的缺了不报。
+分级自动：`primary` 场景与 `importance: protagonist` 的角色起 `fine` 档（1500~2500 字），其余 `standard`（350~600 字）。`--md` 之外不带参数时出 JSON 骨架，给 `seed --assets` 吃。写法与验图清单见 `references/assets-prompt.md`。
 
 ### Step 1 — seed 工作底稿
 
@@ -88,7 +88,7 @@ node {baseDir}/scripts/comfy-production.mjs seed storyboard.json --ep 1 \
 
 出来的是骨架：每段的 `id`、`h3Mode: I2VA`、以及每切一条空的 `qwen`（`canvas` 已按 `sceneIndex` 填成场景 id，`refs` 按画内人物道具预填）。**骨架里没有秒数**——秒数只在 storyboard 里，存两份必然漂。
 
-给了 `--assets` 就直接吃 Step 0.5 那份，母稿与中文名一起带过来；没给就从 `--art` / `--cast` 现建（母稿为空）。**不要用 `--art` 覆盖已经写过母稿的资产**——重建会把 `moss` 抹掉。
+给了 `--assets` 就直接吃 Step 0.5 那份，提示词与中文名一起带过来；没给就从 `--art` / `--cast` 现建。**不要用 `--art` 覆盖已经贴过提示词的资产**——重建会把 `prompt` 抹掉。
 
 ### Step 2 — 逐段填（分镜出来之后）
 
@@ -98,7 +98,7 @@ node {baseDir}/scripts/comfy-production.mjs seed storyboard.json --ep 1 \
 2. **`qwen`**：每切一条。`canvas` 是 `image_1`（必须是场景，它决定画布与光位），`refs` 是 `image_2..N`（画内每个角色、每个道具都要挂，漏一件模型就当场发明一件），`prompt` 是指令式中文编辑提示词。写法见 `{baseDir}/references/qwen-i2i.md`。
 3. **`tailFrom` / `dedupeFrames`**：这一段要抽上一段末帧当首帧时填。生产者末镜必须已经写了稳焦静止（`tail-anchor` 门盯着），`dedupeFrames` 是头部要裁掉的重复帧数。
 4. **`enter` / `exit` / `sound`**：段与段之间的三句交代。`enter` 写「从上一段接过来什么状态、新出现的人从哪来」，`exit` 写「把世界留在什么状态」，`sound.carry` / `keep` 把底噪连成一条线。写法与四种合法转场见 `{baseDir}/references/continuity.md`。
-5. **资产的 `moss`**：只给要出设定板的 CH/SC/PR 写。`tier: fine`（1500~2500 字，主角与主场景）或 `standard`（350~600 字，配角与道具）。写法见 `{baseDir}/references/moss-t2i.md`。写了 moss 的资产顺带补一个 `name`——`handoff-cast` 靠它核对「新入画的人有没有写明从哪来」。
+5. **资产的 `prompt`**：expander 输出的中文长提示词贴回 `assets.<编号>.prompt`。资产顺带要有 `name`——`handoff-cast` 靠它核对「新入画的人有没有写明从哪来」。版式与篇幅见 `{baseDir}/references/assets-prompt.md`。
 
 H3 提示词正文**不在这里写**——它在 `storyboard.json` 的 `seg.h3Prompt` 里，这里只校验它的模式字段族对不对。
 
@@ -108,7 +108,7 @@ H3 提示词正文**不在这里写**——它在 `storyboard.json` 的 `seg.h3P
 node {baseDir}/scripts/comfy-production.mjs validate production.json --storyboard storyboard.json
 ```
 
-22 道门，全是代码：
+20 道门，全是代码：
 
 | 门 | 查什么 |
 | --- | --- |
@@ -132,8 +132,6 @@ node {baseDir}/scripts/comfy-production.mjs validate production.json --storyboar
 | `handoff-cast` | 本段首镜新出现的人，`enter` 里必须写明从哪来（按资产 `name` 核对） |
 | `handoff-eyeline` | 上段末镜的视线目标，本段 `enter` 要交代怎么转过去 |
 | `handoff-sound` | `sound.carry` 与上段 `sound.keep` 至少共用一个声源，底噪不许断档 |
-| `moss-sheet` | 设定板母稿写清了版面分区（半身/三视图/正侧背/细节条），否则只会出一格单图（警告级） |
-| `moss-tier` | 写了 moss 的资产篇幅落在档位内（警告级） |
 
 **有违规逐条修，改完重跑，直到 0 违规。** 警告可以带着交付，但要说清。
 
@@ -148,7 +146,7 @@ node {baseDir}/scripts/comfy-production.mjs export production.json \
 production-E01/
 ├── E01-01/index.md        ← 一段一张卡：插槽映射 + 每格 Qwen 提示词 + H3 槽位与提示词
 ├── E01-02/index.md
-├── E01-assets.md          ← 写了 moss 的资产母稿（MOSS 文生图）
+├── E01-assets.md          ← 资产生图单（版式 + 素材 + 贴回来的提示词）
 └── E01-post.md            ← 尾帧去重裁剪表 + ffmpeg 总装命令
 ```
 
@@ -176,7 +174,7 @@ node {baseDir}/scripts/comfy-production.mjs post production.json --storyboard st
 node {baseDir}/scripts/selftest.mjs
 ```
 
-139 项断言，不调模型、不花额度。22 道门每道都有击穿用例，含一次 CLI 端到端。改完脚本先跑这个。
+138 项断言，不调模型、不花额度。20 道门每道都有击穿用例，含一次 CLI 端到端。改完脚本先跑这个。
 
 ### 上下游
 

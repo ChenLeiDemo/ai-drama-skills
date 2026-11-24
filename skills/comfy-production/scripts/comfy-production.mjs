@@ -131,25 +131,6 @@ const paramsOf = (prod) => ({
   maxQwenRefs: Number(prod?.params?.maxQwenRefs) || 5,
 });
 
-const MOSS_TIERS = { fine: [1500, 2500], standard: [350, 600] };
-
-// 设定板必须交代的版面要素：少写就出成"一格单图"，不是多视图设定板
-const SHEET_FACETS = {
-  character: [/半身|全身/, /三视图|正面.*侧面.*背面/, /正面/, /侧面|90\s*°/, /背面/, /细节|局部|特写/],
-  scene: [/全景|主视角/, /局部|细节|特写/, /光照|主光|变体|状态/],
-  prop: [/白底|纯白|中性底/, /正交|三视图|多角度/, /侧|45\s*°/, /细节|放大|磨损|刻/],
-};
-
-// 至少命中几条才算交代过版面（留出措辞自由度）
-const SHEET_MIN = { character: 4, scene: 2, prop: 3 };
-
-export function sheetOk(kind, moss) {
-  const facets = SHEET_FACETS[kind];
-  if (!facets) return true;
-  const hit = facets.filter((re) => re.test(str(moss))).length;
-  return hit >= (SHEET_MIN[kind] ?? facets.length);
-}
-
 // production 的切只有提示词，秒数在 storyboard 里——所有算时长的地方都走这个视图，
 // 避免同一个秒数存两份、改一处忘另一处（这正是要防的漂移）
 export function timedSegments(prod, sb) {
@@ -396,30 +377,6 @@ export function gateReport(prod, sb) {
   });
   add('speech-fit', `台词装得下（${p.charsPerSecond} 字/秒）`, fitBad.length === 0, fitBad.join('；'));
 
-  // 17 母稿篇幅档位（只查写了 moss 的资产）
-  const mossBad = [];
-  let mossCount = 0;
-  for (const id of assetIds) {
-    const a = assets[id];
-    const moss = str(a?.moss).trim();
-    if (!moss) continue;
-    mossCount += 1;
-    const tier = a?.tier ?? 'standard';
-    const range = MOSS_TIERS[tier];
-    if (!range) {
-      mossBad.push(`${id} 的 tier「${tier}」只能是 fine / standard`);
-      continue;
-    }
-    if (moss.length < range[0] || moss.length > range[1]) {
-      mossBad.push(`${id} ${tier} 档要 ${range[0]}~${range[1]} 字，实际 ${moss.length}`);
-    }
-  }
-  if (mossCount === 0) {
-    gates.push({ id: 'moss-tier', label: 'MOSS 母稿篇幅档位', ok: true, detail: '没写 moss，跳过', skipped: true });
-  } else {
-    add('moss-tier', 'MOSS 母稿篇幅档位', mossBad.length === 0, mossBad.join('；'), 'warn');
-  }
-
   // 18~21 段间接续：状态 / 人物 / 视线 / 声音
   // 每段只写自己那 5~15 秒，段与段之间就没人交代交接——人物瞬移、视线错位、底噪断档都出在这。
   const stateBad = [];
@@ -474,17 +431,6 @@ export function gateReport(prod, sb) {
     }
   });
 
-  // 22 母稿版面：设定板要写清分区，否则出图是一格单图（警告级）
-  const sheetBad = [];
-  for (const id of assetIds) {
-    const a = assets[id];
-    const moss = str(a?.moss).trim();
-    if (!moss) continue;
-    if ((a?.layout ?? 'sheet') !== 'sheet') continue;
-    if (!sheetOk(a?.kind, moss)) sheetBad.push(`${id} 没交代版面（半身/三视图/正侧背/细节条缺项）`);
-  }
-  add('moss-sheet', '母稿写清设定板版面', sheetBad.length === 0, sheetBad.join('；'), 'warn');
-
   add('handoff-state', '段落接续：enter / exit 必填', stateBad.length === 0, stateBad.join('；'));
   if (nameCount === 0) {
     gates.push({ id: 'handoff-cast', label: '段落接续：新入画人物交代来源', ok: true, detail: 'assets 没写 name，跳过', skipped: true });
@@ -518,7 +464,7 @@ export function assetSkeleton(art, cast = null) {
       sheet: `images/${sc.name}-sheet.png`,
       tier: sc.primary ? 'fine' : 'standard',
       layout: 'sheet',
-      moss: '',
+      brief: sceneBrief(sc),
     };
   }
   for (const pr of art?.props ?? []) {
@@ -528,7 +474,7 @@ export function assetSkeleton(art, cast = null) {
       sheet: `images/${pr.name}-sheet.png`,
       tier: 'standard',
       layout: 'sheet',
-      moss: '',
+      brief: propBrief(pr),
     };
   }
   (cast?.characters ?? []).forEach((c, i) => {
@@ -539,37 +485,83 @@ export function assetSkeleton(art, cast = null) {
       sheet: `images/${c.name}-sheet.png`,
       tier: c.importance === 'protagonist' ? 'fine' : 'standard',
       layout: 'sheet',
-      moss: '',
+      brief: charBrief(c),
     };
   });
   return { source: art?.source ?? '', assets };
 }
 
-// 母稿体检：篇幅档位 + 该写还没写的。requireIds 给了就只把这几个算「必须有」。
-export function mossReport(doc, requireIds = null) {
-  const assets = doc?.assets ?? {};
-  const rows = [];
-  const bad = [];
-  const missing = [];
-  for (const [id, a] of Object.entries(assets)) {
-    const moss = str(a?.moss).trim();
-    const tier = a?.tier ?? 'standard';
-    const len = moss.length;
-    rows.push({ id, kind: a?.kind ?? '?', tier, len, layout: a?.layout ?? 'sheet', sheetOk: sheetOk(a?.kind, moss) });
-    if (!moss) {
-      if (!requireIds || requireIds.includes(id)) missing.push(id);
-      continue;
-    }
-    if ((a?.layout ?? 'sheet') === 'sheet' && !sheetOk(a?.kind, moss)) {
-      bad.push(`${id} 是设定板但没交代版面——半身/三视图/正侧背/细节条缺项过多`);
-    }
-    const range = MOSS_TIERS[tier];
-    if (!range) bad.push(`${id} 的 tier「${tier}」只能是 fine / standard`);
-    else if (len < range[0] || len > range[1]) bad.push(`${id} ${tier} 档要 ${range[0]}~${range[1]} 字，实际 ${len}`);
-  }
-  return { rows, bad, missing };
+// 上游 art.json / cast.json 只给英文短提示词；中文长提示词交给 fisher-moss-prompt-expander。
+// 这里只把「素材 + 版式 + 篇幅」整理成一张可以直接递给 expander 的单子。
+const SHEET_LAYOUT = {
+  character: '16:9 三区：左侧约 34% 为一格半身像（正面平视，中性浅灰渐变底，作为全片面部基准）；右上为全身三视图（正面／左侧 90°／背面，同一身高基准线、等间距）；右下为细节条 3~4 格（面部特写、惯用手与手上道具、服装磨损、鞋）。三区之间细直线分隔，不加边框装饰，不写任何文字标注。',
+  scene: '16:9：左侧约三分之二为一格主视角全景，机位与后续分镜的 image_1 同角度、同焦段；右侧三分之一上下两格——上格关键局部特写（门扇五金／地表积水／主光源位置），下格同一机位的另一光照状态变体。全图绝对无人物、无手，不写任何文字标注。',
+  prop: '16:9 纯白底：左为正面正交主视图，约占宽 40%；中为侧面 90° 与 45° 俯视各一格，等比例；右为细节放大 1~2 格（磨损处、刻字或铭牌、锁扣结构）。极淡接触阴影、无方向投影，不写任何文字标注。',
+};
+
+export const TIER_HINT = { fine: '1500~2500 字', standard: '350~600 字' };
+
+const joinBits = (...xs) => xs.map((x) => str(x).trim()).filter(Boolean).join('；');
+
+const aspectText = (x) => (typeof x === 'string' ? x : joinBits(x?.state, x?.prompt, x?.desc));
+const anchorText = (a) =>
+  typeof a === 'string' ? a : joinBits(a?.name, a?.desc).replace('；', '：');
+const asList = (v) => (Array.isArray(v) ? v : v ? [v] : []);
+
+function sceneBrief(sc) {
+  const anchors = asList(sc?.anchors).map(anchorText).filter(Boolean);
+  const lights = asList(sc?.lighting).map(aspectText).filter(Boolean);
+  return joinBits(
+    sc?.summary,
+    lights.length ? `光照与状态：${lights.join(' / ')}` : '',
+    anchors.length ? `锚点：${anchors.join(' / ')}` : '',
+  );
 }
 
+function propBrief(pr) {
+  const anchors = asList(pr?.anchors).map(anchorText).filter(Boolean);
+  return joinBits(pr?.summary, pr?.scale ? `尺度：${pr.scale}` : '', anchors.length ? `锚点：${anchors.join(' / ')}` : '');
+}
+
+function charBrief(c) {
+  return joinBits(c?.oneLiner, c?.persona?.appearance, c?.persona?.identity);
+}
+
+export function renderAssetSheet(doc) {
+  const assets = doc?.assets ?? {};
+  const ids = Object.keys(assets);
+  const L = ['# 资产生图单（交给 fisher-moss-prompt-expander）', ''];
+  L.push('上游 art.json / cast.json 的 image.prompt 是英文短提示词，不要翻译。把下面每节的「素材 + 版式 + 篇幅」交给 expander，把它输出的中文长提示词贴回该节，再整段复制进 MOSS。');
+  L.push('');
+  if (!ids.length) {
+    L.push('没有资产。先生成 assets 骨架。');
+    return L.join('\n');
+  }
+  for (const id of ids) {
+    const a = assets[id] ?? {};
+    const tier = a.tier ?? 'standard';
+    L.push(`## ${id} · ${a.kind ?? '?'}${a.name ? ` · ${a.name}` : ''}`);
+    L.push('');
+    if (a.sheet) L.push(`- 设定板文件：${a.sheet}`);
+    L.push(`- 篇幅：${tier}（${TIER_HINT[tier] ?? TIER_HINT.standard}）`);
+    if ((a.layout ?? 'sheet') === 'sheet') {
+      L.push(`- 版式：${SHEET_LAYOUT[a.kind] ?? '16:9 单格'}`);
+      L.push('- 指令：使用 $fisher-moss-prompt-expander 按上述版式扩写；只输出一个 text 代码块。');
+    } else {
+      L.push('- 版式：单图，不要分格不要分隔线。');
+      L.push('- 指令：使用 $fisher-moss-prompt-expander 扩写单张画面；只输出一个 text 代码块。');
+    }
+    if (a.brief) L.push(`- 素材：${a.brief}`);
+    L.push('');
+    L.push('提示词：');
+    L.push('');
+    L.push('```text');
+    L.push(str(a.prompt).trim() || '（在这里贴 expander 的输出，贴完写回 assets.\`prompt\` 就不会被重新导出冲掉）');
+    L.push('```');
+    L.push('');
+  }
+  return L.join('\n');
+}
 export function seed(storyboard, ep, { art = null, cast = null, assets = null } = {}) {
   const epData = (storyboard?.episodes ?? []).find((e) => Number(e?.ep) === Number(ep));
   if (!epData) throw new Error(`storyboard 里没有第 ${ep} 集`);
@@ -678,28 +670,10 @@ export function renderSegmentCard(prod, sb, seg) {
 }
 
 export function renderAssets(prod) {
-  const assets = prod?.assets ?? {};
-  const ids = Object.keys(assets);
-  const withMoss = ids.filter((id) => str(assets[id]?.moss).trim());
-  const L = [`# 第 ${prod?.ep} 集 · 资产母稿（MOSS 文生图）`, ''];
-  if (!withMoss.length) {
-    L.push('没有资产写 `moss`，跳过。');
-    return L.join('\n');
-  }
-  for (const id of withMoss) {
-    const a = assets[id];
-    L.push(`## ${id} · ${a.kind ?? '?'} · ${a.tier ?? 'standard'}`);
-    L.push('');
-    if (a.sheet) L.push(`- 设定板文件：\`${a.sheet}\``);
-    L.push('');
-    L.push('```text');
-    L.push(str(a.moss).trim());
-    L.push('```');
-    L.push('');
-  }
-  return L.join('\n');
+  const head = '# 资产生图单（交给 fisher-moss-prompt-expander）';
+  const want = `# 第 ${prod?.ep} 集 · 资产生图单（交给 fisher-moss-prompt-expander）`;
+  return renderAssetSheet(prod).replace(head, want);
 }
-
 export function renderPost(prod, sb) {
   const p = paramsOf(prod);
   const L = [`# 第 ${prod?.ep} 集 · 后期总装`, ''];
@@ -767,8 +741,7 @@ function flag(args, name, fallback = null) {
 
 function usage() {
   console.log(`用法：
-  node comfy-production.mjs assets <art.json> [--cast cast.json] > production-assets.json
-  node comfy-production.mjs moss <production-assets.json> [--require S01,C01]
+  node comfy-production.mjs assets <art.json> [--cast cast.json] [--md] > production-assets.json
   node comfy-production.mjs seed <storyboard.json> --ep 1 [--assets production-assets.json] [--art art.json] [--cast cast.json] > production.json
   node comfy-production.mjs validate <production.json> --storyboard <storyboard.json>
   node comfy-production.mjs export <production.json> --storyboard <storyboard.json> --out <dir>
@@ -780,34 +753,15 @@ function main(argv) {
   const file = rest[0];
   if (!cmd || !file || cmd === '-h' || cmd === '--help') return usage();
 
-  // 阶段二：资产骨架与母稿体检，不需要 storyboard
+  // 阶段二：资产骨架与资产生图单，不需要 storyboard
   if (cmd === 'assets') {
     const art = readJson(file);
     const castPath = flag(rest, '--cast');
     const cast = castPath ? readJson(castPath) : null;
-    console.log(JSON.stringify(assetSkeleton(art, cast), null, 2));
+    const doc = assetSkeleton(art, cast);
+    console.log(rest.includes('--md') ? renderAssetSheet(doc) : JSON.stringify(doc, null, 2));
     return;
   }
-
-  if (cmd === 'moss') {
-    const doc = readJson(file);
-    const req = flag(rest, '--require');
-    const requireIds = req ? req.split(',').map((x) => x.trim()).filter(Boolean) : null;
-    const r = mossReport(doc, requireIds);
-    for (const row of r.rows) {
-      const lay = row.layout === 'sheet' ? (row.len ? (row.sheetOk ? '版面✓' : '版面?') : '—') : '单图';
-      console.log(`${row.len ? '✓' : '·'} ${row.id.padEnd(5)} ${String(row.kind).padEnd(9)} ${row.tier.padEnd(8)} ${lay.padEnd(6)} ${row.len} 字`);
-    }
-    if (r.missing.length) console.log(`\n待写母稿：${r.missing.join(', ')}`);
-    if (r.bad.length) {
-      console.log(`\n✗ ${r.bad.join('\n✗ ')}`);
-      process.exitCode = 1;
-    } else {
-      console.log(`\n${r.rows.length} 个资产，${r.rows.filter((x) => x.len).length} 个有母稿，0 个篇幅越界`);
-    }
-    return;
-  }
-
   if (cmd === 'seed') {
     const sb = readJson(file);
     const artPath = flag(rest, '--art');

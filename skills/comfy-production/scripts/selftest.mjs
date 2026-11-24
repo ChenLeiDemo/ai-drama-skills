@@ -11,9 +11,8 @@ import { spawnSync } from 'node:child_process';
 import {
   assetSkeleton,
   cutStarts,
-  sheetOk,
+  renderAssetSheet,
   descText,
-  mossReport,
   dialogueChars,
   fieldText,
   gateReport,
@@ -161,7 +160,6 @@ const withH3 = (sb, segId, fn) => {
   const st = gateStats(gates);
   eq(st.errors.length, 0, `干净数据不该有违规：${st.errors.map((g) => `${g.id} ${g.detail}`).join(' / ')}`);
   eq(st.warns.length, 0, '干净数据不该有警告');
-  ok(gates.find((g) => g.id === 'moss-tier').skipped, '没写 moss 时 moss-tier 明确跳过');
   expectPass(baseProd(), 'frame-grid');
   expectPass(baseProd(), 'qwen-slots');
   expectPass(baseProd(), 'speech-fit');
@@ -319,57 +317,70 @@ const withH3 = (sb, segId, fn) => {
   expectFail(baseProd(), 'music-spec', sbMus);
 }
 
-/* ---------------- 资产骨架与母稿体检 ---------------- */
+/* ---------------- 资产骨架与资产生图单 ---------------- */
 {
   const art = {
+    source: '渡口',
     scenes: [
-      { id: 'S01', name: '渡船船舱', primary: true },
+      {
+        id: 'S01',
+        name: '渡船船舱',
+        primary: true,
+        summary: '六排坐板的老木船敞篷客舱',
+        lighting: '晨雾散射光，篷布漏光',
+        anchors: [{ name: '补丁船篷', desc: '右后角一块更深色的方形补丁' }],
+      },
       { id: 'S02', name: '栈桥' },
     ],
-    props: [{ id: 'P01', name: '竹篙' }],
+    props: [{ id: 'P01', name: '旧皮箱', summary: '磨白的藤条皮箱' }],
   };
-  const cast = { characters: [{ name: '阿禾', importance: 'protagonist' }, { name: '沈知微' }] };
+  const cast = {
+    characters: [
+      { name: '阿禾', importance: 'protagonist', oneLiner: '十九岁，抱皮箱北上', persona: { appearance: '梳两条长辫，藏青学生装' } },
+      { name: '沈知微' },
+    ],
+  };
   const sk = assetSkeleton(art, cast);
   eq(Object.keys(sk.assets).join(), 'S01,S02,P01,C01,C02', '骨架编号：场景→道具→角色');
   eq(sk.assets.S01.tier, 'fine', '主场景起 fine 档');
   eq(sk.assets.S02.tier, 'standard', '次要场景起 standard 档');
   eq(sk.assets.C01.tier, 'fine', '主角起 fine 档');
   eq(sk.assets.C02.tier, 'standard', '配角起 standard 档');
-  eq(sk.assets.S01.name, '渡船船舱', '带中文名，handoff-cast 要用');
-  eq(sk.assets.C01.moss, '', '母稿留空，由人写');
   eq(sk.assets.C01.layout, 'sheet', '资产默认出设定板');
-  eq(sheetOk('character', '左半身像，右上全身三视图正面侧面背面，右下细节条'), true, '身份板要素齐了算过');
-  eq(sheetOk('character', '一个十九岁少女站在雾里，很瘦'), false, '只写气氛不写版面要判没交代');
-  eq(sheetOk('scene', '机位全景，右侧局部特写门锁，另一格夜间光照变体'), true, '场景板要全景+局部+光照');
-  eq(sheetOk('prop', '白底，正面与侧面 45° 多角度，右侧细节放大'), true, '道具板要白底+多角度+细节');
-  eq(sheetOk('prop', '一把旧刀'), false, '道具只写物体不写版面');
+  eq(sk.assets.C01.name, '阿禾', '带中文名，handoff-cast 要用');
   eq(sk.assets.S01.sheet, 'images/渡船船舱-sheet.png', '设定板路径按名字推');
+  ok(sk.assets.S01.moss === undefined, '不再自己存 moss 母稿');
+  ok(sk.assets.S01.brief.includes('六排坐板'), '场景 brief 带 summary');
+  ok(sk.assets.S01.brief.includes('光照'), '场景 brief 带光照');
+  ok(sk.assets.S01.brief.includes('补丁船篷'), '场景 brief 带锚点');
+  ok(sk.assets.C01.brief.includes('皮箱'), '角色 brief 带 oneLiner');
+  ok(sk.assets.P01.brief.includes('藤条'), '道具 brief 带 summary');
+  ok(!JSON.stringify(sk).includes('[object Object]'), '美术设定里的数组字段要被拍平，不能漏成 [object Object]');
 
-  sk.assets.S01.moss = '甲'.repeat(1600);
-  sk.assets.P01.moss = '乙'.repeat(100);
-  const r = mossReport(sk);
-  eq(r.rows.length, 5, '逐个资产一行');
-  eq(r.missing.join(), 'S02,C01,C02', '缺母稿清单');
-  eq(r.bad.length, 3, 'S01 缺版面、P01 缺版面 + 篇幅越界，共三处');
-  ok(r.bad.some((x) => x.includes('P01') && x.includes('350~600')), 'P01 篇幅越界被点名');
-  ok(r.bad.some((x) => x.includes('S01') && x.includes('版面')), 'S01 没写版面被点名');
-  eq(mossReport(sk, ['S01']).missing.join(), '', '--require 只要求 S01 时不算缺');
+  const md = renderAssetSheet(sk);
+  ok(md.includes('fisher-moss-prompt-expander'), '生图单点名 expander');
+  ok(md.includes('不要翻'), '生图单明说别翻译英文 prompt');
+  ok(md.includes('左侧约 34%'), '角色版式沿用上游三区比例');
+  ok(md.includes('三视图'), '角色版式要求三视图');
+  ok(md.includes('16:9 纯白底'), '道具版式要求纯白底');
+  ok(md.includes('不写任何文字标注'), '版式禁文字标注');
+  ok(md.includes('1500~2500 字'), 'fine 档给出篇幅提示');
+  ok(md.includes('350~600 字'), 'standard 档给出篇幅提示');
+  ok(md.includes('素材：'), '每节带素材，不用重新找上游');
+  eq(md.split('在这里贴 expander 的输出').length - 1, 5, '每个资产一个待贴位');
 
-  // 版面门：设了 sheet 但母稿没写分区 → 警告，不算违规
-  const badSheet = baseProd();
-  badSheet.assets.S01.moss = '甲'.repeat(1600);
-  const gs = gatesOf(badSheet)['moss-sheet'];
-  ok(gs && !gs.ok && gs.level === 'warn', '母稿没写版面只算警告');
-  eq(gateStats(gateReport(badSheet, SB)).errors.length, 0, '版面警告不计入违规');
+  const single = assetSkeleton(art, cast);
+  single.assets.S01.layout = 'single';
+  ok(renderAssetSheet(single).includes('不要分格'), '单图资产明确不要分格');
 
-  const goodSheet = baseProd();
-  goodSheet.assets.S01.moss =
-    '主视角全景交代整条客舱与六排坐板；右侧一格局部特写补丁船篷与漏光缝；再一格夜间主光变体。' + '甲'.repeat(1500);
-  expectPass(goodSheet, 'moss-sheet');
+  const filled = assetSkeleton(art, cast);
+  filled.assets.S01.prompt = '版面：16:9 三区……（expander 的输出）';
+  ok(renderAssetSheet(filled).includes('expander 的输出'), '贴回来的提示词会出现在单子里');
+  eq(renderAssetSheet(filled).split('在这里贴 expander 的输出').length - 1, 4, '已贴的那份不再显示占位');
 
   const withAssets = seed(SB, 1, { assets: sk.assets });
-  eq(withAssets.assets.S01.moss.length, 1600, 'seed 吃掉资产母稿，不重建');
   eq(withAssets.assets.C01.name, '阿禾', 'seed 保留资产中文名');
+  eq(withAssets.assets.S01.layout, 'sheet', 'seed 保留版面标记');
   eq(Object.keys(seed(SB, 1, { art, cast }).assets).join(), 'S01,S02,P01,C01,C02', '没给 --assets 时从 art/cast 现建');
 }
 
@@ -430,19 +441,6 @@ const withH3 = (sb, segId, fn) => {
   const p = baseProd();
   p.params.charsPerSecond = 2;
   expectPass(p, 'speech-fit', sbMove);
-}
-
-/* ---------------- 母稿档位 ---------------- */
-{
-  const p = baseProd();
-  p.assets.C01.tier = 'fine';
-  p.assets.C01.moss = '短';
-  const g = gatesOf(p)['moss-tier'];
-  ok(g && !g.ok && g.level === 'warn', 'moss 篇幅不足只算警告');
-  const st = gateStats(gateReport(p, SB));
-  eq(st.errors.length, 0, 'moss 警告不计入违规');
-  ok(renderAssets(p).includes('C01'), '资产母稿导出了写了 moss 的资产');
-  ok(!renderAssets(baseProd()).includes('```text'), '没写 moss 时资产母稿不出代码块');
 }
 
 /* ---------------- 导出 ---------------- */
@@ -512,16 +510,10 @@ const withH3 = (sb, segId, fn) => {
     eq(skel.assets.S01.tier, 'fine', 'assets 子命令起出 fine 档');
     eq(skel.assets.P01.kind, 'prop', 'assets 子命令认道具');
 
-    const skelPath = join(dir, 'production-assets.json');
-    writeFileSync(skelPath, a.stdout, 'utf8');
-    const mo = spawnSync(process.execPath, [SCRIPT, 'moss', skelPath], { encoding: 'utf8' });
-    eq(mo.status, 0, 'moss 没越界时退出码 0');
-    ok(mo.stdout.includes('待写母稿'), 'moss 列出待写的资产');
-
-    skel.assets.S01.moss = '甲'.repeat(10);
-    writeFileSync(skelPath, JSON.stringify(skel), 'utf8');
-    const mo2 = spawnSync(process.execPath, [SCRIPT, 'moss', skelPath, '--require', 'S01'], { encoding: 'utf8' });
-    eq(mo2.status, 1, 'moss 篇幅越界时退出码 1');
+    const am = spawnSync(process.execPath, [SCRIPT, 'assets', artPath, '--md'], { encoding: 'utf8' });
+    eq(am.status, 0, 'assets --md 退出码 0');
+    ok(am.stdout.includes('fisher-moss-prompt-expander'), 'assets --md 出的是生图单');
+    ok(am.stdout.includes('设定板文件：images/渡船船舱-sheet.png'), '生图单带设定板路径');
 
     const out = join(dir, 'export');
     const e = spawnSync(process.execPath, [SCRIPT, 'export', prodPath, '--storyboard', FIX, '--out', out], { encoding: 'utf8' });
