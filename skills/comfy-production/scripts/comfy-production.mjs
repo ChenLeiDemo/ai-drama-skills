@@ -537,8 +537,8 @@ function charBrief(c) {
 export function renderAssetSheet(doc) {
   const assets = doc?.assets ?? {};
   const ids = Object.keys(assets);
-  const L = ['# 资产生图单（交给 fisher-moss-prompt-expander）', ''];
-  L.push('上游 art.json / cast.json 的 image.prompt 是英文短提示词，不要翻译。把下面每节的「素材 + 版式 + 篇幅」交给 expander，把它输出的中文长提示词贴回该节，再整段复制进 MOSS。');
+  const L = ['# 资产生图单（上游版式 + expander）', ''];
+  L.push('两种来源，按小节里的「指令」走：上游 novel-art / novel-characters 已经写好中文长提示词的，直接用；还没写的，把「素材 + 版式 + 篇幅」交给 fisher-moss-prompt-expander 扩写，再贴回 assets.<编号>.prompt。');
   L.push('');
   if (!ids.length) {
     L.push('没有资产。先生成 assets 骨架。');
@@ -553,10 +553,18 @@ export function renderAssetSheet(doc) {
     L.push(`- 篇幅：${tier}（${TIER_HINT[tier] ?? TIER_HINT.standard}）`);
     if ((a.layout ?? 'sheet') === 'sheet') {
       L.push(`- 版式：${SHEET_LAYOUT[a.kind] ?? '16:9 单格'}`);
-      L.push('- 指令：使用 $fisher-moss-prompt-expander 按上述版式扩写；只输出一个 text 代码块。');
+      L.push(
+        str(a.prompt).trim()
+          ? '- 指令：上游已写好中文长提示词，直接复制下方内容。'
+          : '- 指令：使用 $fisher-moss-prompt-expander 按上述版式扩写；只输出一个 text 代码块。',
+      );
     } else {
       L.push('- 版式：单图，不要分格不要分隔线。');
-      L.push('- 指令：使用 $fisher-moss-prompt-expander 扩写单张画面；只输出一个 text 代码块。');
+      L.push(
+        str(a.prompt).trim()
+          ? '- 指令：上游已写好，直接复制下方内容。'
+          : '- 指令：使用 $fisher-moss-prompt-expander 扩写单张画面；只输出一个 text 代码块。',
+      );
     }
     if (a.brief) L.push(`- 素材：${a.brief}`);
     L.push('');
@@ -573,8 +581,12 @@ export function seed(storyboard, ep, { art = null, cast = null, assets = null } 
   const epData = (storyboard?.episodes ?? []).find((e) => Number(e?.ep) === Number(ep));
   if (!epData) throw new Error(`storyboard 里没有第 ${ep} 集`);
   const scenes = art?.scenes ?? [];
-  // 阶段二做过资产母稿就直接用那份，别再从 art/cast 重建——重建会把 moss 抹掉
+  // 阶段二做过资产单就直接用那份，别再从 art/cast 重建——重建会把上游写好的提示词抹掉
   const assetMap = assets?.assets ?? (assets && typeof assets === 'object' ? assets : assetSkeleton(art, cast).assets);
+  // 画布按资产里场景的登记顺序取：没给 --art 也能定位第 n 场用哪张空景
+  const sceneIds = Object.entries(assetMap)
+    .filter(([, a]) => a?.kind === 'scene')
+    .map(([id]) => id);
   return {
     source: storyboard?.source ?? '',
     ep: Number(ep),
@@ -595,7 +607,7 @@ export function seed(storyboard, ep, { art = null, cast = null, assets = null } 
       sound: { carry: [], keep: [] },
       cuts: (seg.cuts ?? []).map((cut, ci) => ({
         qwen: {
-          canvas: scenes[seg.sceneIndex - 1]?.id ?? '',
+          canvas: sceneIds[seg.sceneIndex - 1] ?? scenes[seg.sceneIndex - 1]?.id ?? '',
           refs: [...(cut.characters ?? []), ...(cut.props ?? [])],
           prompt: ci === 0 ? '' : '',
         },

@@ -359,7 +359,7 @@ const withH3 = (sb, segId, fn) => {
 
   const md = renderAssetSheet(sk);
   ok(md.includes('fisher-moss-prompt-expander'), '生图单点名 expander');
-  ok(md.includes('不要翻'), '生图单明说别翻译英文 prompt');
+  ok(md.includes('两种来源'), '生图单说清两种来源：上游已写 / 现跑 expander');
   ok(md.includes('左侧约 34%'), '角色版式沿用上游三区比例');
   ok(md.includes('三视图'), '角色版式要求三视图');
   ok(md.includes('16:9 纯白底'), '道具版式要求纯白底');
@@ -374,9 +374,12 @@ const withH3 = (sb, segId, fn) => {
   ok(renderAssetSheet(single).includes('不要分格'), '单图资产明确不要分格');
 
   const filled = assetSkeleton(art, cast);
-  filled.assets.S01.prompt = '版面：16:9 三区……（expander 的输出）';
-  ok(renderAssetSheet(filled).includes('expander 的输出'), '贴回来的提示词会出现在单子里');
-  eq(renderAssetSheet(filled).split('在这里贴 expander 的输出').length - 1, 4, '已贴的那份不再显示占位');
+  filled.assets.S01.prompt = '版面：16:9 三区……（上游写好的中文长提示词）';
+  const filledMd = renderAssetSheet(filled);
+  ok(filledMd.includes('上游写好的中文长提示词'), '上游写好的提示词会出现在单子里');
+  ok(filledMd.includes('上游已写好'), '有提示词时指令改成直接复制');
+  ok(!filledMd.split('## S01')[1].split('## S02')[0].includes('$fisher-moss-prompt-expander'), 'S01 有提示词就不再要求跑 expander');
+  eq(filledMd.split('在这里贴 expander 的输出').length - 1, 4, '已写的那份不再显示占位');
 
   const withAssets = seed(SB, 1, { assets: sk.assets });
   eq(withAssets.assets.C01.name, '阿禾', 'seed 保留资产中文名');
