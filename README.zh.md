@@ -38,31 +38,26 @@
 
 **面向各类 Agent 的 AI 短剧制作 skill 集合**：从一本小说到直接交给生成管线的制作素材——排大纲、拆角色、出场景与道具设定、写剧本、排开场站位、切分镜。每个 skill 都是自包含目录，任何能够读取 `SKILL.md` 并执行随附脚本的 Agent 都可以使用；Claude Code 和 Codex 只是其中两个运行示例，并非使用前提。
 
-仓库目前有 **8 个 skill：6 个制作阶段、一个本地 ComfyUI 生产层，加上可独立使用的角色参考图生成**。改编大纲收敛结构，角色、美术、剧本同步迭代；开场站位在分镜之前确定每场人物的位置。
+仓库目前有 **6 个 skill**：改编大纲、剧本、开场站位、分镜、本地 ComfyUI 生产层，加上可独立使用的角色参考图生成。
+
+**这个 fork 里没有独立的角色集与美术集。** `novel-outline` 已经把 `C01` / `S01` / `P01` 连同名字与用途定下来了；`comfy-production` 把这份资产清单排成每件一张设定板单子（上游三区版式），中文长提示词交给 [fisher-moss-prompt-expander](https://github.com/Work-Fisher/fisher-moss-prompt-expander) 出。
 
 ```mermaid
 flowchart TD
-    novel[小说原文] --> outline[novel-outline · 改编大纲]
-    outline --> characters[novel-characters · 角色设定]
-    outline --> art[novel-art · 美术设定]
+    novel[小说原文] --> outline[novel-outline · 大纲 + 资产清单]
     outline --> script[novel-script · 剧本]
-    characters <--> art
-    art <--> script
-    script <--> characters
-    characters -. 角色设定 .-> refs[character-refs · 角色参考图]
-    art --> staging[novel-staging · 开场站位]
-    script --> staging
+    script --> staging[novel-staging · 开场站位]
     staging -->|复制开场走位句| storyboard[novel-storyboard · 分镜]
-    refs -. 参考图片 .-> storyboard
+    outline -. 资产清单 C01/S01/P01 .-> sheets[comfy-production · 资产生图单]
+    sheets -. 版式 + 素材 .-> expander[fisher-moss-prompt-expander · 中文长提示词]
+    expander -. 设定板 .-> storyboard
     storyboard --> production[comfy-production · ComfyUI 生产层]
 ```
 
 | Skill | 做什么 |
 | --- | --- |
 | [**novel-outline**](skills/novel-outline) | 把一本小说改编成短剧大纲五件套：改编说明、人物表、爽点表、分集梗概、资产清单（含叙事道具表）。14 道质量门全部脚本检查，支持已有大纲的体检模式 |
-| [**novel-characters**](skills/novel-characters) | 把大纲定下的角色做成角色设定集：人物画像、形象提示词、音色提示词、角色设定图。吃 outline.json 预填角色表，报告语言可选 |
 | [**character-refs**](skills/character-refs) | 给任何故事里的角色**真出**参考图（不限小说，自己原创的故事也行）：一段话描述角色，拆字段、补全、确认后先出正面全身锚点，大头照、90° 侧面、背面、细节图都只参考这张锚点，按需分档。每张图带标识、可单独重出，过期自动标出。支持 Qwen Image（ComfyUI）、codex 出图、GPT Image 2 API、自定义命令 |
-| [**novel-art**](skills/novel-art) | 给 AI 短剧出美术设定集（场景 + 叙事道具）：一致性锚点、光照与状态变体、尺度参照、无人无手白底提示词。吃 outline.json 预填清单，10 道质量门全部脚本检查 |
 | [**novel-script**](skills/novel-script) | 给 AI 短剧写剧本：场次 + 节拍流（动作与台词交替），逐集时长按语速确定性折算，钩子前 3 拍冷开场兑现是门，台词本按角色聚合带音色提示词直接对接 TTS。10 道质量门全部脚本检查 |
 | [**novel-staging**](skills/novel-staging) | 给 AI 短剧的每一场排开场站位：先从场景图里认出能站能坐的东西、推算到俯视平面上，再按剧本排谁在哪件东西的哪一侧、坐还是站、面朝哪，程序写出开场走位句交给分镜照抄；报告是能拖动调整的俯视平面，改完导出就是新的 staging.json。8 道质量门全部脚本检查 |
 | [**novel-storyboard**](skills/novel-storyboard) | 给 AI 短剧出分镜：段（一次生成 ≤15 秒）→ 分镜（2–5 秒硬门）→ 分镜图（主图钉 0.00 秒、子图钉各自切点），MiniMax H3 提示词的对齐指令与切点时刻逐字对账；分镜图拿设定图当参考图真出图，export 一键出 H3 / Seedance 投产包。18 道质量门全部脚本检查 |
