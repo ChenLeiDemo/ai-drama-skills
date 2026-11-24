@@ -9,7 +9,7 @@
 | 上游给不了 | 这里补 |
 | --- | --- |
 | 每格分镜图的提示词与参考图清单 | Qwen-Image-2.1 多图编辑提示词 + `TextEncodeQwenImage21` 的 `image_1..N` 插槽顺位 |
-| 资产怎么出设定板 | 从 `outline.json` 出资产单（含上游三区设定板版式），中文长提示词交给 [`fisher-moss-prompt-expander`](https://github.com/Work-Fisher/fisher-moss-prompt-expander) 扩写 |
+| 资产怎么出设定板 | 沿用上游三区版式的资产单，中文长提示词交给 [`fisher-moss-prompt-expander`](https://github.com/Work-Fisher/fisher-moss-prompt-expander) 扩写 |
 | 一次生成多少帧、用哪个模式 | H3 五模式（`T2VA`/`I2VA`/`FL2VA`/`L2VA`/`Ref2VA`）+ ComfyUI 量化版 `17k+5` 帧 |
 | 段跑完怎么拼成片 | 尾帧去重裁剪表 + J/L-Cut + 能直接跑的 ffmpeg + `-14 LUFS` 归一 |
 
@@ -17,10 +17,10 @@
 
 ```bash
 # 0) 资产单（分镜之前就能做）：版式 + 素材 + 篇幅，交给 fisher-moss-prompt-expander 扩写
-node scripts/comfy-production.mjs assets outline.json --md > 资产生图单.md
+node scripts/comfy-production.mjs assets art.json --cast cast.json --md > 资产生图单.md
 
 # 1) 起骨架（吃上面那份，提示词与中文名一起带过来）
-node scripts/comfy-production.mjs seed storyboard.json --ep 1 --assets production-assets.json --outline outline.json > production.json
+node scripts/comfy-production.mjs seed storyboard.json --ep 1 --assets production-assets.json > production.json
 
 # 2) 逐段填 h3Mode / qwen / tailFrom / enter / exit / sound，并贴回 assets.prompt
 

@@ -319,34 +319,43 @@ const withH3 = (sb, segId, fn) => {
 
 /* ---------------- 资产骨架与资产生图单 ---------------- */
 {
-  const outline = {
+  const art = {
     source: '渡口',
     scenes: [
-      { id: 'S01', name: '渡船船舱', primary: true, reusePlan: '全剧主舞台，六集复用' },
+      {
+        id: 'S01',
+        name: '渡船船舱',
+        primary: true,
+        summary: '六排坐板的老木船敞篷客舱',
+        lighting: '晨雾散射光，篷布漏光',
+        anchors: [{ name: '补丁船篷', desc: '右后角一块更深色的方形补丁' }],
+      },
       { id: 'S02', name: '栈桥' },
     ],
-    props: [{ id: 'P01', name: '旧皮箱', function: '沈知微的底牌与软肋，开箱即翻案' }],
+    props: [{ id: 'P01', name: '旧皮箱', summary: '磨白的藤条皮箱' }],
+  };
+  const cast = {
     characters: [
-      { id: 'C01', name: '沈知微', role: '女主', tier: 'lead', arc: '从抱箱防备到当众开箱' },
-      { id: 'C02', name: '陆行远', role: '男主' },
+      { name: '阿禾', importance: 'protagonist', oneLiner: '十九岁，抱皮箱北上', persona: { appearance: '梳两条长辫，藏青学生装' } },
+      { name: '沈知微' },
     ],
   };
-  const sk = assetSkeleton(outline);
+  const sk = assetSkeleton(art, cast);
   eq(Object.keys(sk.assets).join(), 'S01,S02,P01,C01,C02', '骨架编号：场景→道具→角色');
   eq(sk.assets.S01.tier, 'fine', '主场景起 fine 档');
   eq(sk.assets.S02.tier, 'standard', '次要场景起 standard 档');
-  eq(sk.assets.C01.tier, 'fine', 'lead 角色起 fine 档');
+  eq(sk.assets.C01.tier, 'fine', '主角起 fine 档');
   eq(sk.assets.C02.tier, 'standard', '配角起 standard 档');
   eq(sk.assets.C01.layout, 'sheet', '资产默认出设定板');
-  eq(sk.assets.C01.name, '沈知微', '带中文名，handoff-cast 要用');
+  eq(sk.assets.C01.name, '阿禾', '带中文名，handoff-cast 要用');
   eq(sk.assets.S01.sheet, 'images/渡船船舱-sheet.png', '设定板路径按名字推');
-  ok(sk.assets.S01.brief.includes('渡船船舱'), '场景 brief 带名字');
-  ok(sk.assets.S01.brief.includes('主场景'), '主场景在 brief 里点明');
-  ok(sk.assets.S01.brief.includes('六集复用'), '场景 brief 带 reusePlan');
-  ok(sk.assets.P01.brief.includes('开箱即翻案'), '道具 brief 带 function');
-  ok(sk.assets.C01.brief.includes('女主'), '角色 brief 带 role');
-  ok(sk.assets.C01.brief.includes('抱箱防备'), '角色 brief 带 arc');
-  ok(!JSON.stringify(sk).includes('[object Object]'), '不再把对象漏成 [object Object]');
+  ok(sk.assets.S01.moss === undefined, '不再自己存 moss 母稿');
+  ok(sk.assets.S01.brief.includes('六排坐板'), '场景 brief 带 summary');
+  ok(sk.assets.S01.brief.includes('光照'), '场景 brief 带光照');
+  ok(sk.assets.S01.brief.includes('补丁船篷'), '场景 brief 带锚点');
+  ok(sk.assets.C01.brief.includes('皮箱'), '角色 brief 带 oneLiner');
+  ok(sk.assets.P01.brief.includes('藤条'), '道具 brief 带 summary');
+  ok(!JSON.stringify(sk).includes('[object Object]'), '美术设定里的数组字段要被拍平，不能漏成 [object Object]');
 
   const md = renderAssetSheet(sk);
   ok(md.includes('fisher-moss-prompt-expander'), '生图单点名 expander');
@@ -360,20 +369,19 @@ const withH3 = (sb, segId, fn) => {
   ok(md.includes('素材：'), '每节带素材，不用重新找上游');
   eq(md.split('在这里贴 expander 的输出').length - 1, 5, '每个资产一个待贴位');
 
-  const single = assetSkeleton(outline);
+  const single = assetSkeleton(art, cast);
   single.assets.S01.layout = 'single';
   ok(renderAssetSheet(single).includes('不要分格'), '单图资产明确不要分格');
 
-  const filled = assetSkeleton(outline);
+  const filled = assetSkeleton(art, cast);
   filled.assets.S01.prompt = '版面：16:9 三区……（expander 的输出）';
   ok(renderAssetSheet(filled).includes('expander 的输出'), '贴回来的提示词会出现在单子里');
   eq(renderAssetSheet(filled).split('在这里贴 expander 的输出').length - 1, 4, '已贴的那份不再显示占位');
 
   const withAssets = seed(SB, 1, { assets: sk.assets });
-  eq(withAssets.assets.C01.name, '沈知微', 'seed 保留资产中文名');
+  eq(withAssets.assets.C01.name, '阿禾', 'seed 保留资产中文名');
   eq(withAssets.assets.S01.layout, 'sheet', 'seed 保留版面标记');
-  eq(withAssets.segments[0].cuts[0].qwen.canvas, 'S01', 'seed 按 sceneIndex 用 outline 的场景 id 填画布');
-  eq(Object.keys(seed(SB, 1, { outline }).assets).join(), 'S01,S02,P01,C01,C02', '没给 --assets 时从 outline 现建');
+  eq(Object.keys(seed(SB, 1, { art, cast }).assets).join(), 'S01,S02,P01,C01,C02', '没给 --assets 时从 art/cast 现建');
 }
 
 /* ---------------- 段落接续 ---------------- */
@@ -457,16 +465,13 @@ const withH3 = (sb, segId, fn) => {
 
 /* ---------------- seed ---------------- */
 {
-  const outline = {
-    scenes: [{ id: 'S01', name: '渡船船舱' }],
-    props: [{ id: 'P01', name: '竹篙' }],
-    characters: [{ id: 'C01', name: '阿禾' }, { id: 'C02', name: '沈知微' }],
-  };
-  const prod = seed(SB, 1, { outline });
+  const art = { scenes: [{ id: 'S01', name: '渡船船舱' }], props: [{ id: 'P01', name: '竹篙' }] };
+  const cast = { characters: [{ name: '阿禾' }, { name: '沈知微' }] };
+  const prod = seed(SB, 1, { art, cast });
   eq(prod.segments.length, 2, 'seed 出两段');
   eq(prod.segments[0].cuts.length, 2, 'seed 保住切数');
   eq(prod.segments[0].cuts[0].qwen.canvas, 'S01', 'seed 按 sceneIndex 填画布');
-  eq(prod.assets.C02.kind, 'character', 'outline 的 C 编号直接沿用');
+  eq(prod.assets.C02.kind, 'character', 'case：cast 转成 C 编号');
   eq(prod.segments[0].h3Mode, 'I2VA', 'seed 默认 I2VA');
   assert.throws(() => seed(SB, 9), /没有第 9 集/);
   passed += 1;
@@ -493,24 +498,19 @@ const withH3 = (sb, segId, fn) => {
     ok(noSb.stderr.includes('--storyboard'), '缺 --storyboard 时说清原因');
     passed += 1;
 
-    const outlinePath = join(dir, 'outline.json');
+    const artPath = join(dir, 'art.json');
     writeFileSync(
-      outlinePath,
-      JSON.stringify({
-        scenes: [{ id: 'S01', name: '渡船船舱', primary: true }],
-        props: [{ id: 'P01', name: '竹篙' }],
-        characters: [{ id: 'C01', name: '阿禾', tier: 'lead' }],
-      }),
+      artPath,
+      JSON.stringify({ scenes: [{ id: 'S01', name: '渡船船舱', primary: true }], props: [{ id: 'P01', name: '竹篙' }] }),
       'utf8',
     );
-    const a = spawnSync(process.execPath, [SCRIPT, 'assets', outlinePath], { encoding: 'utf8' });
+    const a = spawnSync(process.execPath, [SCRIPT, 'assets', artPath], { encoding: 'utf8' });
     eq(a.status, 0, `assets 退出码 0：${a.stderr}`);
     const skel = JSON.parse(a.stdout);
     eq(skel.assets.S01.tier, 'fine', 'assets 子命令起出 fine 档');
     eq(skel.assets.P01.kind, 'prop', 'assets 子命令认道具');
-    eq(skel.assets.C01.name, '阿禾', 'assets 子命令用 outline 的 id 与名字');
 
-    const am = spawnSync(process.execPath, [SCRIPT, 'assets', outlinePath, '--md'], { encoding: 'utf8' });
+    const am = spawnSync(process.execPath, [SCRIPT, 'assets', artPath, '--md'], { encoding: 'utf8' });
     eq(am.status, 0, 'assets --md 退出码 0');
     ok(am.stdout.includes('fisher-moss-prompt-expander'), 'assets --md 出的是生图单');
     ok(am.stdout.includes('设定板文件：images/渡船船舱-sheet.png'), '生图单带设定板路径');

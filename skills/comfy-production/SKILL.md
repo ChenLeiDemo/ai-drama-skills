@@ -54,19 +54,24 @@ metadata:
 
 硬前提是 `storyboard.json`（来自 `novel-storyboard`），且**每一段都必须给 `--storyboard`**——没有它这个技能无法对账，直接报错退出。
 
-资产清单取自 `outline.json`——`characters[] / scenes[] / props[]` 本身就带 `C01` / `S01` / `P01` 编号，不需要再单独做角色集与美术集。
+有则更好：
+
+- `--art`（`novel-art` 的 art.json）：`seed` 时自动填场景 `S01`、道具 `P01` 的资产条目与设定板路径
+- `--cast`（`novel-characters` 的 cast.json）：`seed` 时按出场顺序填 `C01`、`C02`
 
 **一次做一集**。`production.json` 是单集的，`ep` 与 storyboard 的集号必须对得上。
 
 ### Step 0.5 — 先出资产提示词（不用等分镜）
 
-资产清单来自 `outline.json`（每件资产自带编号），提示词交给 [`fisher-moss-prompt-expander`](https://github.com/Work-Fisher/fisher-moss-prompt-expander)——三视图设定板版式（左 34% 半身像 / 右上三视图 / 右下细节条）由本技能给出，措辞由 expander 出。
+上游 `novel-art` / `novel-characters` 提供的是**资产数据**：场景锚点（补丁船篷、磨白的坐板）、光照状态、人物档案、道具功能与尺度。这些是跨集一致性的唯一抓手，原样进 brief，**不重写不精简**。
 
-本技能只做**清单与交接**：把每份资产的编号、类型、设定板路径、篇幅档位、版式句、素材摘要排成一张单子。
+中文长提示词不在这里手写——交给 [`fisher-moss-prompt-expander`](https://github.com/Work-Fisher/fisher-moss-prompt-expander)。上游附带的 `image.prompt` / `image.sheet` 英文短提示词不参与本流程：翻成中文也只有一两百字，缺的正是母稿要的生活痕迹与左右非对称。
+
+本技能只做**清单与交接**：把每份资产的编号、类型、设定板路径、篇幅档位、三区**设定板版式**（左 34% 半身像 / 右上三视图 / 右下细节条）与素材摘要（锚点 / 光照 / 档案）排成一张单子。
 
 ```bash
 # 1) 出资产单：每份资产一节（篇幅 + 版式 + 素材 + 待贴位）
-node {baseDir}/scripts/comfy-production.mjs assets outline.json --md > 资产生图单.md
+node {baseDir}/scripts/comfy-production.mjs assets art.json --cast cast.json --md > 资产生图单.md
 
 # 2) 逐节交给 expander 扩写（它会读 references 里的构图/材质/手部模块）
 #    使用 $fisher-moss-prompt-expander：按下面的版式扩写这份素材……只输出一个 text 代码块。
@@ -74,18 +79,18 @@ node {baseDir}/scripts/comfy-production.mjs assets outline.json --md > 资产生
 # 3) 把输出贴回 assets.<编号>.prompt（production.json 里），导出时才不会被冲掉
 ```
 
-分级自动：`primary` 场景与 `tier: lead` 的角色起 `fine` 档（1500~2500 字），其余 `standard`（350~600 字）。`--md` 之外不带参数时出 JSON 骨架，给 `seed --assets` 吃。写法与验图清单见 `references/assets-prompt.md`。
+分级自动：`primary` 场景与 `importance: protagonist` 的角色起 `fine` 档（1500~2500 字），其余 `standard`（350~600 字）。锚点与光照没写进 brief 的资产，等于把跨集一致性交给了运气——第一集定稿后把设定板留着，后续集数当参考图挂。`--md` 之外不带参数时出 JSON 骨架，给 `seed --assets` 吃。写法与验图清单见 `references/assets-prompt.md`。
 
 ### Step 1 — seed 工作底稿
 
 ```bash
 node {baseDir}/scripts/comfy-production.mjs seed storyboard.json --ep 1 \
-  --assets production-assets.json --outline outline.json > production.json
+  --assets production-assets.json > production.json
 ```
 
 出来的是骨架：每段的 `id`、`h3Mode: I2VA`、以及每切一条空的 `qwen`（`canvas` 已按 `sceneIndex` 填成场景 id，`refs` 按画内人物道具预填）。**骨架里没有秒数**——秒数只在 storyboard 里，存两份必然漂。
 
-给了 `--assets` 就直接吃 Step 0.5 那份，提示词与中文名一起带过来；没给就从 `--outline` 现建（提示词为空）。**不要用 `--outline` 覆盖已经贴过提示词的资产**——重建会把 `prompt` 抹掉。
+给了 `--assets` 就直接吃 Step 0.5 那份，提示词与中文名一起带过来；没给就从 `--art` / `--cast` 现建。**不要用 `--art` 覆盖已经贴过提示词的资产**——重建会把 `prompt` 抹掉。
 
 ### Step 2 — 逐段填（分镜出来之后）
 

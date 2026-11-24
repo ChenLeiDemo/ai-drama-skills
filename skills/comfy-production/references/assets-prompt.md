@@ -6,17 +6,19 @@
 
 | 谁 | 给什么 |
 | --- | --- |
-| `novel-outline` | **资产清单**：`characters[] / scenes[] / props[]`，每件带 `C01` / `S01` / `P01` 编号、名字与功能 |
+| `novel-characters` / `novel-art` | **资产数据**：编号与中文名、人物档案（oneLiner / appearance）、场景**锚点**（补丁船篷、磨白的坐板）与**光照状态**（晨雾 / 雾散近岸）、道具功能与尺度 |
 | [`fisher-moss-prompt-expander`](https://github.com/Work-Fisher/fisher-moss-prompt-expander) | **中文长提示词**：把一句话或一组素材扩成 1500~2500 字的连贯段落，含人物手部、材质光色、构图骨架 |
-| 本技能 | **清单与交接**：`assets` 生成每份资产的编号 / 类型 / 设定板路径 / 篇幅档位 / 三区**设定板版式**（左 34% 半身像 / 右上三视图 / 右下细节条） / 素材摘要 |
+| 本技能 | **清单与交接**：`assets` 把上面的资产数据原样摘进 brief（锚点、光照、档案一条不落），再配三区设定板版式与篇幅档位，排成一张单子 |
 
-`outline.json` 只给「这是谁、干什么用的」，不给锚点与光照细节——那些由 expander 按「合理创作决定」补齐。跨集一致性靠你在贴回去的提示词里把关键特征写死。
+锚点和光照是跨集一致的唯一抓手。它们来自 `art.json`，`assets` 原样摘进 brief——**不要在这一步重写、精简或省略**，否则第二集生成的是另一个船舱。
+
+上游那两条英文短提示词（`image.prompt` / `image.sheet`）和角色的 `promptLocal` **不参与本流程**：翻成中文也只有一两百字，缺的正是母稿要的生活痕迹与左右非对称。措辞交给 expander，事实交给 art/cast。
 
 ## 二、怎么跑
 
 ```bash
 # 1) 生成资产生图单（每份资产一节：篇幅 + 版式 + 素材 + 待贴位）
-node {baseDir}/scripts/comfy-production.mjs assets outline.json --md > 资产生图单.md
+node {baseDir}/scripts/comfy-production.mjs assets art.json --cast cast.json --md > 资产生图单.md
 
 # 2) 逐节把「版式 + 素材」交给 expander：
 #    使用 $fisher-moss-prompt-expander，按下面的版式扩写这份素材……

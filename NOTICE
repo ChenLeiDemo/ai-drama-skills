@@ -20,9 +20,6 @@ to the original work:
 
   - added skills/comfy-production (new files, Apache-2.0)
   - scripts/report-selftest.mjs: syntax assertion uses new vm.Script instead of new Function
-  - removed skills/novel-characters and skills/novel-art; asset lists now come from
-    novel-outline and asset prompts from fisher-moss-prompt-expander
-  - added skills/comfy-production (asset sheet briefs, ComfyUI prompts, post assembly)
 
 The bundled sample story `skills/storycast/examples/渡口.txt` is an original
 work written for this project and is covered by the same license.

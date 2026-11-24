@@ -455,9 +455,9 @@ export function gateStats(gates) {
 
 // 阶段二：从 art.json / cast.json 起资产骨架。上游的 image.prompt 是英文短提示词，
 // 不能直接喂 MOSS——母稿是重新组织的中文长段落，这里只留齿位，内容由人写。
-export function assetSkeleton(outline) {
+export function assetSkeleton(art, cast = null) {
   const assets = {};
-  for (const sc of outline?.scenes ?? []) {
+  for (const sc of art?.scenes ?? []) {
     assets[sc.id] = {
       kind: 'scene',
       name: sc.name ?? '',
@@ -467,7 +467,7 @@ export function assetSkeleton(outline) {
       brief: sceneBrief(sc),
     };
   }
-  for (const pr of outline?.props ?? []) {
+  for (const pr of art?.props ?? []) {
     assets[pr.id] = {
       kind: 'prop',
       name: pr.name ?? '',
@@ -477,20 +477,21 @@ export function assetSkeleton(outline) {
       brief: propBrief(pr),
     };
   }
-  for (const c of outline?.characters ?? []) {
-    assets[c.id] = {
+  (cast?.characters ?? []).forEach((c, i) => {
+    const id = `C${String(i + 1).padStart(2, '0')}`;
+    assets[id] = {
       kind: 'character',
       name: c.name ?? '',
       sheet: `images/${c.name}-sheet.png`,
-      tier: c.tier === 'lead' || c.importance === 'protagonist' ? 'fine' : 'standard',
+      tier: c.importance === 'protagonist' ? 'fine' : 'standard',
       layout: 'sheet',
       brief: charBrief(c),
     };
-  }
-  return { source: outline?.source ?? '', assets };
+  });
+  return { source: art?.source ?? '', assets };
 }
 
-// 资产提示词不在这里写；中文长提示词交给 fisher-moss-prompt-expander。
+// 上游 art.json / cast.json 只给英文短提示词；中文长提示词交给 fisher-moss-prompt-expander。
 // 这里只把「素材 + 版式 + 篇幅」整理成一张可以直接递给 expander 的单子。
 const SHEET_LAYOUT = {
   character: '16:9 三区：左侧约 34% 为一格半身像（正面平视，中性浅灰渐变底，作为全片面部基准）；右上为全身三视图（正面／左侧 90°／背面，同一身高基准线、等间距）；右下为细节条 3~4 格（面部特写、惯用手与手上道具、服装磨损、鞋）。三区之间细直线分隔，不加边框装饰，不写任何文字标注。',
@@ -502,11 +503,29 @@ export const TIER_HINT = { fine: '1500~2500 字', standard: '350~600 字' };
 
 const joinBits = (...xs) => xs.map((x) => str(x).trim()).filter(Boolean).join('；');
 
-// outline.json 里每件资产都带 id/name/role 或 function。锚点、光照这类细节不再由上游给，
-// 留给 expander 按「合理创作决定」补——所以 brief 只传已知事实，不编。
-const sceneBrief = (sc) => joinBits(sc?.name, sc?.primary ? '主场景' : '', sc?.reusePlan, sc?.summary);
-const propBrief = (pr) => joinBits(pr?.name, pr?.function, pr?.summary);
-const charBrief = (c) => joinBits(c?.name, c?.role, c?.arc, c?.oneLiner);
+const aspectText = (x) => (typeof x === 'string' ? x : joinBits(x?.state, x?.prompt, x?.desc));
+const anchorText = (a) =>
+  typeof a === 'string' ? a : joinBits(a?.name, a?.desc).replace('；', '：');
+const asList = (v) => (Array.isArray(v) ? v : v ? [v] : []);
+
+function sceneBrief(sc) {
+  const anchors = asList(sc?.anchors).map(anchorText).filter(Boolean);
+  const lights = asList(sc?.lighting).map(aspectText).filter(Boolean);
+  return joinBits(
+    sc?.summary,
+    lights.length ? `光照与状态：${lights.join(' / ')}` : '',
+    anchors.length ? `锚点：${anchors.join(' / ')}` : '',
+  );
+}
+
+function propBrief(pr) {
+  const anchors = asList(pr?.anchors).map(anchorText).filter(Boolean);
+  return joinBits(pr?.summary, pr?.scale ? `尺度：${pr.scale}` : '', anchors.length ? `锚点：${anchors.join(' / ')}` : '');
+}
+
+function charBrief(c) {
+  return joinBits(c?.oneLiner, c?.persona?.appearance, c?.persona?.identity);
+}
 
 export function renderAssetSheet(doc) {
   const assets = doc?.assets ?? {};
@@ -543,15 +562,12 @@ export function renderAssetSheet(doc) {
   }
   return L.join('\n');
 }
-export function seed(storyboard, ep, { outline = null, assets = null } = {}) {
+export function seed(storyboard, ep, { art = null, cast = null, assets = null } = {}) {
   const epData = (storyboard?.episodes ?? []).find((e) => Number(e?.ep) === Number(ep));
   if (!epData) throw new Error(`storyboard 里没有第 ${ep} 集`);
-  // 阶段二做过资产单就直接吃那份，别再从 outline 重建——重建会抹掉贴回来的提示词
-  const assetMap = assets?.assets ?? (assets && typeof assets === 'object' ? assets : assetSkeleton(outline).assets);
-  // 画布取资产里登记的顺序：第 n 场的 image_1 就是第 n 个 scene
-  const sceneIds = Object.entries(assetMap)
-    .filter(([, a]) => a?.kind === 'scene')
-    .map(([id]) => id);
+  const scenes = art?.scenes ?? [];
+  // 阶段二做过资产母稿就直接用那份，别再从 art/cast 重建——重建会把 moss 抹掉
+  const assetMap = assets?.assets ?? (assets && typeof assets === 'object' ? assets : assetSkeleton(art, cast).assets);
   return {
     source: storyboard?.source ?? '',
     ep: Number(ep),
@@ -570,11 +586,11 @@ export function seed(storyboard, ep, { outline = null, assets = null } = {}) {
       enter: '',
       exit: '',
       sound: { carry: [], keep: [] },
-      cuts: (seg.cuts ?? []).map((cut) => ({
+      cuts: (seg.cuts ?? []).map((cut, ci) => ({
         qwen: {
-          canvas: sceneIds[seg.sceneIndex - 1] ?? '',
+          canvas: scenes[seg.sceneIndex - 1]?.id ?? '',
           refs: [...(cut.characters ?? []), ...(cut.props ?? [])],
-          prompt: '',
+          prompt: ci === 0 ? '' : '',
         },
       })),
     })),
@@ -725,8 +741,8 @@ function flag(args, name, fallback = null) {
 
 function usage() {
   console.log(`用法：
-  node comfy-production.mjs assets <outline.json> [--md] > production-assets.json
-  node comfy-production.mjs seed <storyboard.json> --ep 1 [--assets production-assets.json] [--outline outline.json] > production.json
+  node comfy-production.mjs assets <art.json> [--cast cast.json] [--md] > production-assets.json
+  node comfy-production.mjs seed <storyboard.json> --ep 1 [--assets production-assets.json] [--art art.json] [--cast cast.json] > production.json
   node comfy-production.mjs validate <production.json> --storyboard <storyboard.json>
   node comfy-production.mjs export <production.json> --storyboard <storyboard.json> --out <dir>
   node comfy-production.mjs post <production.json> --storyboard <storyboard.json> [--out <dir>]`);
@@ -739,21 +755,26 @@ function main(argv) {
 
   // 阶段二：资产骨架与资产生图单，不需要 storyboard
   if (cmd === 'assets') {
-    const outline = readJson(file);
-    const doc = assetSkeleton(outline);
+    const art = readJson(file);
+    const castPath = flag(rest, '--cast');
+    const cast = castPath ? readJson(castPath) : null;
+    const doc = assetSkeleton(art, cast);
     console.log(rest.includes('--md') ? renderAssetSheet(doc) : JSON.stringify(doc, null, 2));
     return;
   }
   if (cmd === 'seed') {
     const sb = readJson(file);
-    const outlinePath = flag(rest, '--outline');
+    const artPath = flag(rest, '--art');
+    const castPath = flag(rest, '--cast');
     const assetsPath = flag(rest, '--assets');
-    const outline = outlinePath ? readJson(outlinePath) : null;
+    const art = artPath ? readJson(artPath) : null;
+    const cast = castPath ? readJson(castPath) : null;
     const assets = assetsPath ? readJson(assetsPath) : null;
     const ep = flag(rest, '--ep', 1);
-    console.log(JSON.stringify(seed(sb, ep, { outline, assets }), null, 2));
+    console.log(JSON.stringify(seed(sb, ep, { art, cast, assets }), null, 2));
     return;
   }
+
   const sbPath = flag(rest, '--storyboard');
   if (!sbPath) throw new Error(`${cmd} 必须给 --storyboard——结构真理源在那边，不给就没法对账`);
   const prod = readJson(file);
