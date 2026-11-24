@@ -78,7 +78,7 @@ node scripts/novel-characters.mjs seed outline.json > seed.json
 
 内置 **中文 / English / 日本語** 三套界面文案。**其他语言一样支持**——skill 会现场把界面文案翻译成目标语言，存进 `cast.json` 的 `ui` 字段，渲染时合并。法语、韩语、西班牙语都能出完整报告，不会露出英文界面。
 
-两条不跟随语言：**出图和 TTS 提示词永远英文**（引擎吃英文最稳）；**原文引文永远保持原文语言**（翻译了就不是证据了）。
+两条不跟随语言：**`image.negativePrompt` / `image.sheet` / `tags` 与 TTS 提示词永远英文**（引擎吃英文最稳）；**原文引文永远保持原文语言**（翻译了就不是证据了）。`image.prompt` 写中文长版（expander 规则 + 三区版式）。
 
 ## 报告长什么样
 
@@ -126,7 +126,7 @@ node scripts/novel-characters.mjs seed outline.json > seed.json
 | --- | --- |
 | `evidence` 必须是原文**逐字连续**片段 | 防编造。被「他说」断开的对白不许拼接 |
 | 出图 prompt **不许出现人名** | 图像模型对人名偏见极重，会画成它记忆里的角色 |
-| 字段**语言分工** | 人类字段跟随 `--lang`、出图和 TTS 提示词永远英文，模型会漂 |
+| 字段**语言分工** | 人类字段跟随 `--lang`；`image.prompt` 中文长版、机器字段与 TTS 英文，模型会漂 |
 | 结构 + 枚举 | `importance` 只能是那四个值 |
 
 这三条不是拍脑袋定的——是模型输出真的违反过、被校验脚本当场抓住才立起来的。

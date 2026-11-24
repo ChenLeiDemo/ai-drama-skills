@@ -29,7 +29,7 @@
 
 4. **光照状态从分集反推。**这个场景在出现的那些集里经历了什么时段和天气，就写哪些状态。别凭空写一套「白天/夜晚/黄昏」全家桶——用不上的状态是维护负担。
 
-5. **提示词永远英文，永远空景。**`image.prompt` 里明写 empty scene / no people，`negativePrompt` 必须禁人。**绝不出现角色名、作者名、作品名**——图像模型会把它认识的东西画进去。
+5. **主提示词写中文长版（expander 规则 + 三区版面），永远空景。**`image.prompt` 按 `prompting.md` 写足内容层与版面层，明写「无人物、无手」；`negativePrompt` 仍用英文禁人（people / figure / person），这是空景的硬保证。**绝不出现角色名、作者名、作品名**——图像模型会把它认识的东西画进去。
 
 6. **提示词里不写渲染风格，只写这个地方的状态。**不要出现 `Semi-realistic environment concept art` / `painterly rendering` 这类句子，也不要给 `image.tags` 打 `semi-realistic`、`painterly` 这种风格标。画风是出图那一刻才定的，整批共用一段风格指令由调用方附加——写进每条提示词只会跟当时选的风格打架，而且换风格要逐条改。
 

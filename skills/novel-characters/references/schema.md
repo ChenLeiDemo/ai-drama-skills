@@ -75,7 +75,7 @@
 | `oneLiner` | string | **本地语言** | 一句话抓住这个人 |
 | `persona.*` | — | **本地语言** | `personality` 3–5 个词 |
 | `persona.evidence` | string[] | **原文语言** | **逐字引用**，永远不翻译——翻了就不是证据了。没有就空数组 |
-| `image.prompt` | string | **英文** | 单张人物图；**禁止出现人名**；**必须写明族裔／年代／地域，并保留身份对应的可见设计**，不指定渲染画风 |
+| `image.prompt` | string | **中文长版** | 角色设定板提示词：内容层 + 三区版式，≥300 字；**禁止出现人名**；**必须写明族裔／年代／地域，并保留身份对应的可见设计**；写法见 `prompting.md` |
 | `image.promptLocal` | string | 英文 | `image.prompt`（中文长版）的英文对照，给只吃英文的出图模型；可省略；**同样禁止人名** |
 | `image.negativePrompt` | string | **英文** | 逗号分隔 |
 | `image.tags` | string[] | **英文** | 4–8 个检索标签：题材、年代、色板、材质、光照。**不打画风标**（`semi-realistic`、`painterly` 这类），画风出图时才定 |
