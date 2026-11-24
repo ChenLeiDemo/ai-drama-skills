@@ -10,6 +10,7 @@
 - **novel-script**：新增 `references/toonflow-script-craft.md`（三种密度、信息差登记、反转与伏笔登记、心理与设定画面化、文末自查清单）。写戏之前先填写信息差与伏笔登记再落节拍，校验后按清单人工复查。
 - **novel-storyboard**：新增 `references/toonflow-shot-craft.md`、`references/toonflow-frame-craft.md`、`references/toonflow-video-templates.md`。切镜时使用景别与表演方法，写分镜图提示词之前先按取帧判断取帧，下游换用其他视频模型时才选用异机型模板，交付之前按连续性清单人工复查。
 - **comfy-production**：正文补一句衔接——下游不使用 H3、换成其他视频模型时，模式与提示词写法衔接 novel-storyboard 的 `toonflow-video-templates.md`，不在本技能另起一套写法。其余技能（character-refs、novel-staging）没有改动。
+- **口径修正（2026-11-24）**：统一 novel-script 三种密度的判定标准（三处表述同一把尺）；写明四处落点——信息差与伏笔登记表存为剧本同目录的 `<剧名>-registers.md`、类型选型结论写进 outline.md 的改编说明段、画风选型结论存为 art.json 同目录的 `visual-style.md`、空间基准写进每场第一段的 `blocking` 字段；补 novel-storyboard 语速复查的裁决规则，novel-characters 辨识阈值与 reference 对齐；五个补强技能版本号升至 2.1.0，comfy-production 升至 1.0.1。
 
 ## 2.2.1 — novel-staging 默认交付 HTML 工具报告 — 2026-10-15
 
