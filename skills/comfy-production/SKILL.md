@@ -79,7 +79,7 @@ node {baseDir}/scripts/comfy-production.mjs assets art.json --cast cast.json --m
 # 3) 把输出贴回 assets.<编号>.prompt（production.json 里），导出时才不会被冲掉
 ```
 
-分级自动：`primary` 场景与 `importance: protagonist` 的角色起 `fine` 档（1500~2500 字），其余 `standard`（350~600 字）。锚点与光照没写进 brief 的资产，等于把跨集一致性交给了运气——第一集定稿后把设定板留着，后续集数当参考图挂。`--md` 之外不带参数时出 JSON 骨架，给 `seed --assets` 吃。写法与验图清单见 `references/assets-prompt.md`。
+分级自动：`primary` 场景与 `importance: protagonist` 的角色起 `fine` 档（800~1200 字），其余 `standard`（300~500 字）。锚点与光照没写进 brief 的资产，等于把跨集一致性交给了运气——第一集定稿后把设定板留着，后续集数当参考图挂。`--md` 之外不带参数时出 JSON 骨架，给 `seed --assets` 吃。写法与验图清单见 `references/assets-prompt.md`。
 
 ### Step 1 — seed 工作底稿
 

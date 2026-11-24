@@ -553,7 +553,7 @@ const SHEET_LAYOUT = {
   prop: '16:9 纯白底：左为正面正交主视图，约占宽 40%；中为侧面 90° 与 45° 俯视各一格，等比例；右为细节放大 1~2 格（磨损处、刻字或铭牌、锁扣结构）。极淡接触阴影、无方向投影，不写任何文字标注。',
 };
 
-export const TIER_HINT = { fine: '1500~2500 字', standard: '350~600 字' };
+export const TIER_HINT = { fine: '800~1200 字', standard: '300~500 字' };
 
 const joinBits = (...xs) => xs.map((x) => str(x).trim()).filter(Boolean).join('；');
 

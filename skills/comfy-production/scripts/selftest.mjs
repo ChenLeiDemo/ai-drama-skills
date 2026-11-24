@@ -366,8 +366,8 @@ const withH3 = (sb, segId, fn) => {
   ok(md.includes('三视图'), '角色版式要求三视图');
   ok(md.includes('16:9 纯白底'), '道具版式要求纯白底');
   ok(md.includes('不写任何文字标注'), '版式禁文字标注');
-  ok(md.includes('1500~2500 字'), 'fine 档给出篇幅提示');
-  ok(md.includes('350~600 字'), 'standard 档给出篇幅提示');
+  ok(md.includes('800~1200 字'), 'fine 档给出篇幅提示');
+  ok(md.includes('300~500 字'), 'standard 档给出篇幅提示');
   ok(md.includes('素材：'), '每节带素材，不用重新找上游');
   eq(md.split('在这里贴 expander 的输出').length - 1, 5, '每个资产一个待贴位');
 

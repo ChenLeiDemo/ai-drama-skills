@@ -7,7 +7,7 @@
 | 谁 | 给什么 |
 | --- | --- |
 | `novel-characters` / `novel-art` | **资产数据**：编号与中文名、人物档案（oneLiner / appearance）、场景**锚点**（补丁船篷、磨白的坐板）与**光照状态**（晨雾 / 雾散近岸）、道具功能与尺度 |
-| [`fisher-moss-prompt-expander`](https://github.com/Work-Fisher/fisher-moss-prompt-expander) | **中文长提示词**：把一句话或一组素材扩成 1500~2500 字的连贯段落，含人物手部、材质光色、构图骨架 |
+| [`fisher-moss-prompt-expander`](https://github.com/Work-Fisher/fisher-moss-prompt-expander) | **中文长提示词**：把一句话或一组素材扩成连贯段落（默认 1500~2500 字，本流程按资产压到 300~1200），含人物手部、材质光色、构图骨架 |
 | 本技能 | **清单与交接**：`assets` 把上面的资产数据原样摘进 brief（锚点、光照、档案一条不落），再配三区设定板版式与篇幅档位，排成一张单子 |
 
 锚点和光照是跨集一致的唯一抓手。它们来自 `art.json`，`assets` 原样摘进 brief——**不要在这一步重写、精简或省略**，否则第二集生成的是另一个船舱。
@@ -59,10 +59,10 @@ node {baseDir}/scripts/comfy-production.mjs assets art.json --cast cast.json --m
 
 | 档位 | 篇幅 | 谁用 |
 | --- | --- | --- |
-| `fine` | 1500~2500 字 | 主场景（`primary`）、主角（`importance: protagonist`）、核心叙事道具 |
-| `standard` | 350~600 字 | 次要场景、配角、普通道具 |
+| `fine` | 800~1200 字 | 主场景（`primary`）、主角（`importance: protagonist`）、核心叙事道具 |
+| `standard` | 300~500 字 | 次要场景、配角、普通道具 |
 
-档位由 `assets` 自动判定，写进生图单的「篇幅」行，直接告诉 expander 要多长。expander 默认就是 1500~2500 字，`standard` 档要显式说「350~600 字」。
+档位由 `assets` 自动判定，写进生图单的「篇幅」行，直接告诉 expander 要多长。expander 自己的默认是 1500~2500 字，那是写海报的标准；资产生图按上表压短，告诉它具体字数即可。
 
 ## 五、验图清单
 
