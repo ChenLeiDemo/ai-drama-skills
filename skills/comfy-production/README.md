@@ -25,7 +25,7 @@ node scripts/comfy-production.mjs seed storyboard.json --ep 1 --assets productio
 
 # 2) 逐段填 h3Mode / qwen / tailFrom / assets.moss
 
-# 3) 校验（21 道门，必须给 --storyboard）
+# 3) 校验（22 道门，必须给 --storyboard）
 node scripts/comfy-production.mjs validate production.json --storyboard storyboard.json
 
 # 4) 导出投产包：每段一张卡 + 资产母稿 + 后期总装
@@ -36,11 +36,11 @@ node scripts/comfy-production.mjs export production.json --storyboard storyboard
 
 ## 文档
 
-- [`SKILL.md`](SKILL.md)：完整工作流与 21 道门的清单（agent 读）
+- [`SKILL.md`](SKILL.md)：完整工作流与 22 道门的清单（agent 读）
 - [`references/schema.md`](references/schema.md)：`production.json` 字段表、帧数换算
 - [`references/comfyui-h3.md`](references/comfyui-h3.md)：H3 模式选型、Ref2VA 六字段、量化版八条防雷
 - [`references/qwen-i2i.md`](references/qwen-i2i.md)：插槽顺位、五条硬规矩、不许写的东西
-- [`references/moss-t2i.md`](references/moss-t2i.md)：母稿两档与十段结构
+- [`references/moss-t2i.md`](references/moss-t2i.md)：母稿两档、十段内容层、三类设定板的版面层
 - [`references/continuity.md`](references/continuity.md)：`enter`/`exit`/`sound` 三字段、四种合法转场、过桥镜
 - [`references/post-assembly.md`](references/post-assembly.md)：裁剪表、ffmpeg、人工四步、验收口径
 
@@ -50,7 +50,7 @@ node scripts/comfy-production.mjs export production.json --storyboard storyboard
 node scripts/selftest.mjs
 ```
 
-107 项断言，不调模型、不花额度。每道门都有击穿用例，含一次 CLI 端到端。
+139 项断言，不调模型、不花额度。每道门都有击穿用例，含一次 CLI 端到端。
 
 ## 依赖
 

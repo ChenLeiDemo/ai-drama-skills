@@ -6,7 +6,7 @@ description: |
   并排好 TextEncodeQwenImage21 的 image_1..N 插槽，为 CH/SC/PR 资产写 MOSS 文生图母稿，为每段补 MiniMax H3
   的模式（T2VA/I2VA/FL2VA/L2VA/Ref2VA）与 ComfyUI 量化版帧数（17k+5），最后导出成片总装包（尾帧去重裁剪表
   + J/L-Cut + ffmpeg 命令 + -14 LUFS 归一）。
-  21 道质量门全部由脚本对着 storyboard 逐条对账，秒数、节拍、画内人物一改就报错；其中四道专查段与段之间的接续。
+  22 道质量门全部由脚本对着 storyboard 逐条对账，秒数、节拍、画内人物一改就报错；其中四道专查段与段之间的接续。
   不出图、不改戏、不改分镜结构——那些是上游的事。
   Use when asked to 出 ComfyUI 提示词、垫图、多图参考、Qwen 编辑提示词、MOSS 母稿、H3 提示词、帧数换算、后期总装。
 allowed-tools:
@@ -108,7 +108,7 @@ H3 提示词正文**不在这里写**——它在 `storyboard.json` 的 `seg.h3P
 node {baseDir}/scripts/comfy-production.mjs validate production.json --storyboard storyboard.json
 ```
 
-21 道门，全是代码：
+22 道门，全是代码：
 
 | 门 | 查什么 |
 | --- | --- |
@@ -132,6 +132,7 @@ node {baseDir}/scripts/comfy-production.mjs validate production.json --storyboar
 | `handoff-cast` | 本段首镜新出现的人，`enter` 里必须写明从哪来（按资产 `name` 核对） |
 | `handoff-eyeline` | 上段末镜的视线目标，本段 `enter` 要交代怎么转过去 |
 | `handoff-sound` | `sound.carry` 与上段 `sound.keep` 至少共用一个声源，底噪不许断档 |
+| `moss-sheet` | 设定板母稿写清了版面分区（半身/三视图/正侧背/细节条），否则只会出一格单图（警告级） |
 | `moss-tier` | 写了 moss 的资产篇幅落在档位内（警告级） |
 
 **有违规逐条修，改完重跑，直到 0 违规。** 警告可以带着交付，但要说清。
@@ -175,7 +176,7 @@ node {baseDir}/scripts/comfy-production.mjs post production.json --storyboard st
 node {baseDir}/scripts/selftest.mjs
 ```
 
-107 项断言，不调模型、不花额度。21 道门每道都有击穿用例，含一次 CLI 端到端。改完脚本先跑这个。
+139 项断言，不调模型、不花额度。22 道门每道都有击穿用例，含一次 CLI 端到端。改完脚本先跑这个。
 
 ### 上下游
 

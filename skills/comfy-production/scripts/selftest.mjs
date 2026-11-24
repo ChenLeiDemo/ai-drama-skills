@@ -11,6 +11,7 @@ import { spawnSync } from 'node:child_process';
 import {
   assetSkeleton,
   cutStarts,
+  sheetOk,
   descText,
   mossReport,
   dialogueChars,
@@ -336,6 +337,12 @@ const withH3 = (sb, segId, fn) => {
   eq(sk.assets.C02.tier, 'standard', '配角起 standard 档');
   eq(sk.assets.S01.name, '渡船船舱', '带中文名，handoff-cast 要用');
   eq(sk.assets.C01.moss, '', '母稿留空，由人写');
+  eq(sk.assets.C01.layout, 'sheet', '资产默认出设定板');
+  eq(sheetOk('character', '左半身像，右上全身三视图正面侧面背面，右下细节条'), true, '身份板要素齐了算过');
+  eq(sheetOk('character', '一个十九岁少女站在雾里，很瘦'), false, '只写气氛不写版面要判没交代');
+  eq(sheetOk('scene', '机位全景，右侧局部特写门锁，另一格夜间光照变体'), true, '场景板要全景+局部+光照');
+  eq(sheetOk('prop', '白底，正面与侧面 45° 多角度，右侧细节放大'), true, '道具板要白底+多角度+细节');
+  eq(sheetOk('prop', '一把旧刀'), false, '道具只写物体不写版面');
   eq(sk.assets.S01.sheet, 'images/渡船船舱-sheet.png', '设定板路径按名字推');
 
   sk.assets.S01.moss = '甲'.repeat(1600);
@@ -343,9 +350,22 @@ const withH3 = (sb, segId, fn) => {
   const r = mossReport(sk);
   eq(r.rows.length, 5, '逐个资产一行');
   eq(r.missing.join(), 'S02,C01,C02', '缺母稿清单');
-  eq(r.bad.length, 1, 'P01 篇幅越界算一处');
-  ok(r.bad[0].includes('P01'), '越界点名 P01');
+  eq(r.bad.length, 3, 'S01 缺版面、P01 缺版面 + 篇幅越界，共三处');
+  ok(r.bad.some((x) => x.includes('P01') && x.includes('350~600')), 'P01 篇幅越界被点名');
+  ok(r.bad.some((x) => x.includes('S01') && x.includes('版面')), 'S01 没写版面被点名');
   eq(mossReport(sk, ['S01']).missing.join(), '', '--require 只要求 S01 时不算缺');
+
+  // 版面门：设了 sheet 但母稿没写分区 → 警告，不算违规
+  const badSheet = baseProd();
+  badSheet.assets.S01.moss = '甲'.repeat(1600);
+  const gs = gatesOf(badSheet)['moss-sheet'];
+  ok(gs && !gs.ok && gs.level === 'warn', '母稿没写版面只算警告');
+  eq(gateStats(gateReport(badSheet, SB)).errors.length, 0, '版面警告不计入违规');
+
+  const goodSheet = baseProd();
+  goodSheet.assets.S01.moss =
+    '主视角全景交代整条客舱与六排坐板；右侧一格局部特写补丁船篷与漏光缝；再一格夜间主光变体。' + '甲'.repeat(1500);
+  expectPass(goodSheet, 'moss-sheet');
 
   const withAssets = seed(SB, 1, { assets: sk.assets });
   eq(withAssets.assets.S01.moss.length, 1600, 'seed 吃掉资产母稿，不重建');

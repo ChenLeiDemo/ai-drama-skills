@@ -36,6 +36,7 @@
 | `kind` | enum | `scene` / `character` / `prop`。`image_1` 必须指向 `scene`，Ref2VA 的 `lockSheet` 必须指向 `character` |
 | `sheet` | string | 设定板文件路径，导出卡片时写进插槽清单 |
 | `tier` | enum | `fine`（1500~2500 字）/ `standard`（350~600 字）。只在写了 `moss` 时才查 |
+| `layout` | enum | `sheet`（设定板，默认）或 `single`（单图，海报帧那类）。`sheet` 会查母稿有没有交代版面分区 |
 | `moss` | string | MOSS 文生图母稿，中文连贯段落。写法见 `moss-t2i.md` |
 
 ## 段（segments）

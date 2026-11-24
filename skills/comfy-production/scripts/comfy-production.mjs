@@ -133,6 +133,23 @@ const paramsOf = (prod) => ({
 
 const MOSS_TIERS = { fine: [1500, 2500], standard: [350, 600] };
 
+// 设定板必须交代的版面要素：少写就出成"一格单图"，不是多视图设定板
+const SHEET_FACETS = {
+  character: [/半身|全身/, /三视图|正面.*侧面.*背面/, /正面/, /侧面|90\s*°/, /背面/, /细节|局部|特写/],
+  scene: [/全景|主视角/, /局部|细节|特写/, /光照|主光|变体|状态/],
+  prop: [/白底|纯白|中性底/, /正交|三视图|多角度/, /侧|45\s*°/, /细节|放大|磨损|刻/],
+};
+
+// 至少命中几条才算交代过版面（留出措辞自由度）
+const SHEET_MIN = { character: 4, scene: 2, prop: 3 };
+
+export function sheetOk(kind, moss) {
+  const facets = SHEET_FACETS[kind];
+  if (!facets) return true;
+  const hit = facets.filter((re) => re.test(str(moss))).length;
+  return hit >= (SHEET_MIN[kind] ?? facets.length);
+}
+
 // production 的切只有提示词，秒数在 storyboard 里——所有算时长的地方都走这个视图，
 // 避免同一个秒数存两份、改一处忘另一处（这正是要防的漂移）
 export function timedSegments(prod, sb) {
@@ -457,6 +474,17 @@ export function gateReport(prod, sb) {
     }
   });
 
+  // 22 母稿版面：设定板要写清分区，否则出图是一格单图（警告级）
+  const sheetBad = [];
+  for (const id of assetIds) {
+    const a = assets[id];
+    const moss = str(a?.moss).trim();
+    if (!moss) continue;
+    if ((a?.layout ?? 'sheet') !== 'sheet') continue;
+    if (!sheetOk(a?.kind, moss)) sheetBad.push(`${id} 没交代版面（半身/三视图/正侧背/细节条缺项）`);
+  }
+  add('moss-sheet', '母稿写清设定板版面', sheetBad.length === 0, sheetBad.join('；'), 'warn');
+
   add('handoff-state', '段落接续：enter / exit 必填', stateBad.length === 0, stateBad.join('；'));
   if (nameCount === 0) {
     gates.push({ id: 'handoff-cast', label: '段落接续：新入画人物交代来源', ok: true, detail: 'assets 没写 name，跳过', skipped: true });
@@ -489,6 +517,7 @@ export function assetSkeleton(art, cast = null) {
       name: sc.name ?? '',
       sheet: `images/${sc.name}-sheet.png`,
       tier: sc.primary ? 'fine' : 'standard',
+      layout: 'sheet',
       moss: '',
     };
   }
@@ -498,6 +527,7 @@ export function assetSkeleton(art, cast = null) {
       name: pr.name ?? '',
       sheet: `images/${pr.name}-sheet.png`,
       tier: 'standard',
+      layout: 'sheet',
       moss: '',
     };
   }
@@ -508,6 +538,7 @@ export function assetSkeleton(art, cast = null) {
       name: c.name ?? '',
       sheet: `images/${c.name}-sheet.png`,
       tier: c.importance === 'protagonist' ? 'fine' : 'standard',
+      layout: 'sheet',
       moss: '',
     };
   });
@@ -524,10 +555,13 @@ export function mossReport(doc, requireIds = null) {
     const moss = str(a?.moss).trim();
     const tier = a?.tier ?? 'standard';
     const len = moss.length;
-    rows.push({ id, kind: a?.kind ?? '?', tier, len });
+    rows.push({ id, kind: a?.kind ?? '?', tier, len, layout: a?.layout ?? 'sheet', sheetOk: sheetOk(a?.kind, moss) });
     if (!moss) {
       if (!requireIds || requireIds.includes(id)) missing.push(id);
       continue;
+    }
+    if ((a?.layout ?? 'sheet') === 'sheet' && !sheetOk(a?.kind, moss)) {
+      bad.push(`${id} 是设定板但没交代版面——半身/三视图/正侧背/细节条缺项过多`);
     }
     const range = MOSS_TIERS[tier];
     if (!range) bad.push(`${id} 的 tier「${tier}」只能是 fine / standard`);
@@ -761,7 +795,8 @@ function main(argv) {
     const requireIds = req ? req.split(',').map((x) => x.trim()).filter(Boolean) : null;
     const r = mossReport(doc, requireIds);
     for (const row of r.rows) {
-      console.log(`${row.len ? '✓' : '·'} ${row.id.padEnd(5)} ${String(row.kind).padEnd(9)} ${row.tier.padEnd(8)} ${row.len} 字`);
+      const lay = row.layout === 'sheet' ? (row.len ? (row.sheetOk ? '版面✓' : '版面?') : '—') : '单图';
+      console.log(`${row.len ? '✓' : '·'} ${row.id.padEnd(5)} ${String(row.kind).padEnd(9)} ${row.tier.padEnd(8)} ${lay.padEnd(6)} ${row.len} 字`);
     }
     if (r.missing.length) console.log(`\n待写母稿：${r.missing.join(', ')}`);
     if (r.bad.length) {
