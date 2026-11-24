@@ -90,11 +90,15 @@ node {baseDir}/scripts/novel-storyboard.mjs seed <script.json> --eps 1-3 --aspec
 
 流程：**先按剧情单元分段**（每段 9–15 秒、不跨场），**段内切 2–5 秒的分镜**（对话正反打、关键动作插入特写、进场三件套——切镜语法都在 storyboard-pass.md），每切写一条分镜图提示词（中文，直呼角色名）、一段镜头正文 `shot`（中文，通用身份）和六个构图字段；每段写 `blocking`、`soundscape`，有配乐再写 `music`。全部分镜图与下游生成图必须保持顶层 `aspectRatio` 指定的同一画幅。
 
+切镜时同步使用 Toonflow 镜头工艺（已融入本步）：景别拿不准时查 `{baseDir}/references/toonflow-shot-craft.md` 的景别与信息用途对照表，按这一切要让观众知道什么选景别，不要按习惯选；情绪不要只写成形容词，照该文件的情绪落成可见表演对照表落成可见动作；排长台词镜头时使用它的表演语速分档复查单镜容量（只用于分镜阶段复查，剧本阶段的台词折算口径不变）；每场先按空间基准的九格表述与轴线纪律定空间基准，同场后续镜头不越轴。
+
 **每段的镜头正文照 `{baseDir}/references/shot-writing.md` 写**（协议无关：一切一个运镜、动作要做得完、台词逐字、声音分层、不写画风）。发给哪个视频服务，就再套哪份协议语法：MiniMax H3 见 `{baseDir}/references/h3-prompt.md`，Seedance 见 `{baseDir}/references/seedance-prompt.md`。
+
+写每切的分镜图提示词（`frame`）时先读 `{baseDir}/references/toonflow-frame-craft.md`（已融入本步）：按取帧判断决定这一切取哪一帧，静态瞬间取定格点、连续过程取能代表全过程的状态、景别变化与转场按该文件的规则取帧、末帧要兼作下一段首帧用途时按末帧规则取；字段按该文件的字段映射从镜头正文落到 `frame`，连续动作拿不准取起始状态还是结果状态时以该文件为准，不要临场猜。
 
 **每段写一条 `h3Prompt`**，照 `{baseDir}/references/h3-prompt.md` 写（官方方法论的内化版，**不依赖任何外部 skill**）。官方口径默认英文（`promptLang` 可切中文），**每个镜头独立一行**。要点：首行对齐指令和 `[Shot k]` 切点时刻**由分镜秒数推导，一个字符都不许漂**（validate 逐字对账）；认领台词**逐字**进 `<d>[Chinese] …</d>`；每切的运镜词写进自己那一行；声景与配乐分进后两个字段——**声景也是动作指令，画面改了声景一起改**。
 
-**Seedance 提示词不用写**：`render` 报告的提示词面板和 `export --protocol seedance` 都会从上面这些字段现拼。视觉风格由调用方提交时附加，全局约束用 `--constraints <文件>` 给。
+**Seedance 提示词不用写**：`render` 报告的提示词面板和 `export --protocol seedance` 都会从上面这些字段现拼。视觉风格由调用方提交时附加，全局约束用 `--constraints <文件>` 给。下游明确换成 H3 与 Seedance 之外的视频模型时，才读 `{baseDir}/references/toonflow-video-templates.md`（已融入本步）：按目标模型在 Wan 单图首帧英文叙事段落、首帧与首尾帧五段式、通用多参考三种写法里选一种，并守所有模板共用的约束；使用之前先核对目标模型的实际能力，默认路线仍是 H3 与 Seedance 两套既有协议，不要无故改走模板。
 
 切完把 `seedScenes` 删掉。
 
@@ -112,6 +116,8 @@ node {baseDir}/scripts/novel-storyboard.mjs validate <storyboard.json> \
 
 **有违规逐条修，改完重跑，直到通过。**
 
+代码门之外，交付之前再人工过一遍 `{baseDir}/references/toonflow-shot-craft.md` 的连续性检查清单（不新增代码门）：同场轴线、人物左右与视线方向、道具状态、光照与时段逐切对账；再抽查每切的 `frame` 是否符合 `{baseDir}/references/toonflow-frame-craft.md` 的取帧判断与检查清单，取错帧的改完重跑 validate。
+
 **第 18 道 `shot-recipe`（可选挂载）**：给了 `--shots` 才查，不给就明说跳过。cut 上可以写一个可选的 `recipe`（配方卡 id，**cut 级不是 segment 级**，**多格配方靠连续同 id 的分镜表达**，不是数组），门查三条——id 在卡库里、卡片的每条 `must_phrases` 出现在该切的 `frame` 里（两边小写化后 `includes`）、卡片 `cuts` 下限 ≥ 2 时连续同 id 的分镜数不得低于该下限。卡片的**建议景别与运镜不设门**，只在报告的「配方」列和 `checkup` 末尾提示偏离：配方是语汇不是法条，可选挂载的东西一旦变严就没人挂。
 
 ### Step 4 — 输出与汇报
@@ -126,7 +132,7 @@ node {baseDir}/scripts/novel-storyboard.mjs render <剧名>-storyboard.json --ht
 
 报告界面语言用 `--lang zh|en` 指定（优先级 `--lang` > JSON 顶层 `lang` 字段 > 默认中文）——只切界面标签，与 `promptLang`（H3 提示词语言）互相独立。主分镜图与子分镜条按顶层 `aspectRatio` 排版；旧数据的 `_meta.orientation` 与 frame 末尾画幅标签只作兼容。`render` 用 `--frames <目录>` 找分镜图（`<目录>/<段号>/f<切序>.png`，默认当前目录）、用 `--images <目录>` 找批次单的场景设定图（`<目录>/<场景 slug>-sheet.png`，默认 `./images`），两个都可以指到任意路径——**本 skill 不产生这些文件**，下游出完图重跑一次 render 就能嵌进报告。`export --frames <目录>` 会把找得到的分镜图拷进投产包，不用手动往包里放。报告含：KPI 带、分镜节奏带（粗分隔 = 段边界、片宽 = 分镜时长占比、颜色深浅 = 景别远近、点击跳段卡）、分集分镜表（主分镜图 + 子分镜条 + 逐切分镜行 + 分镜图/H3 提示词复制按钮）、生成批次单、配音对齐单、质量门、导出 JSON。Markdown 版每段附完整 H3 提示词，直接复制可用。
 
-汇报一句话说清：几集几镜、总时长 vs 目标、几个生成批次、报告路径；没过的门明说。
+汇报一句话说清：几集几镜、总时长 vs 目标、几个生成批次、报告路径；没过的门明说。产出后按本技能质量门再自检一轮（重点查内部一致性），问题先修再汇报。
 
 **不要说「已出图」**——这一步不存在了，交付的是提示词和挂图清单。
 
@@ -188,3 +194,9 @@ node {baseDir}/scripts/selftest.mjs
 ## 自带样例
 
 `{baseDir}/examples/渡口-storyboard.json`：《渡口》第 1 集完整分镜——10 段 34 切认领剧本全部 35 拍，平均 3.5 秒一切，共 119 秒 / 目标 120 秒，2 个生成批次，每段带完整的 H3 视频提示词（多图对齐 + 切点时刻全部对账通过）。当质量基准，也是自测夹具。
+
+## 参考索引 · Toonflow 镜头工艺、取帧与异机型视频模板
+
+- `{baseDir}/references/toonflow-shot-craft.md`：景别与信息用途对照、情绪外化对照、表演语速分档、空间基准与轴线纪律、连续性检查清单。已融入正文：Step 2 切镜时选景别、落表演、复查单镜容量与轴线，Step 3 交付之前按连续性清单人工复查。
+- `{baseDir}/references/toonflow-frame-craft.md`：取帧判断与字段映射。已融入正文：Step 2 写每切 `frame` 之前先按它取帧，Step 3 抽查取帧是否正确。
+- `{baseDir}/references/toonflow-video-templates.md`：异机型三种视频模板与共用约束。已融入正文：Step 2 在下游明确换用其他视频模型时才选模板。具体使用方法看正文各步。

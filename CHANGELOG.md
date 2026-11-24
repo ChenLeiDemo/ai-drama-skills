@@ -1,5 +1,16 @@
 # Changelog
 
+## 未发布 — Toonflow 工艺补强融入五个技能 — 2026-11-24
+
+**把学习自 Toonflow-app（MIT License）的创作工艺内化为本仓库自己的 references，并融入五个技能的工作流正文。**每份 reference 都剥离了原项目的画布与工具绑定、按本仓库口径改写，文件头注明学习来源，不是原文复制。脚本与质量门的代码没有改动，新增的都是正文步骤里的人工检查项，不新增代码门。
+
+- **novel-outline**：新增 `references/toonflow-narrative-genres.md`（十二类叙事的选型方法、节拍骨架与类型复核清单）。定题材时选定主类型与辅助类型并把结论写进改编说明，排 beats 时按主类型骨架逐段落位，写分集梗概时对节奏，校验后按清单人工复核。
+- **novel-characters**：新增 `references/toonflow-character-design.md`（辨识维度表与造型分层表）。出卡时逐人使用两张表定外观与变体边界，校验后人工抽查同批区分与变体一致性。
+- **novel-art**：新增 `references/toonflow-visual-styles.md`（十一种画风选型与项目视觉约定）与 `references/toonflow-asset-design.md`（资产设计卡、九类材质状态痕迹表、变体连带影响清单）。定输入时先为全剧选定画风，填状态变体之前先使用资产设计方法逐项复查。
+- **novel-script**：新增 `references/toonflow-script-craft.md`（三种密度、信息差登记、反转与伏笔登记、心理与设定画面化、文末自查清单）。写戏之前先填写信息差与伏笔登记再落节拍，校验后按清单人工复查。
+- **novel-storyboard**：新增 `references/toonflow-shot-craft.md`、`references/toonflow-frame-craft.md`、`references/toonflow-video-templates.md`。切镜时使用景别与表演方法，写分镜图提示词之前先按取帧判断取帧，下游换用其他视频模型时才选用异机型模板，交付之前按连续性清单人工复查。
+- **comfy-production**：正文补一句衔接——下游不使用 H3、换成其他视频模型时，模式与提示词写法衔接 novel-storyboard 的 `toonflow-video-templates.md`，不在本技能另起一套写法。其余技能（character-refs、novel-staging）没有改动。
+
 ## 2.2.1 — novel-staging 默认交付 HTML 工具报告 — 2026-10-15
 
 - novel-staging 1.0.1 默认交付可拖动调整站位、坐站和朝向的 `staging-report.html`；JSON 作为工作数据保存，Markdown 按需导出。

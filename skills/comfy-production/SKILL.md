@@ -96,7 +96,7 @@ node {baseDir}/scripts/comfy-production.mjs seed storyboard.json --ep 1 \
 
 每段要填的东西：
 
-1. **`h3Mode`**：`T2VA` 纯文本 / `I2VA` 首帧推动（最常用）/ `FL2VA` 首尾帧插值 / `L2VA` 锁尾帧 / `Ref2VA` 多图锁脸。选型见 `{baseDir}/references/comfyui-h3.md`。
+1. **`h3Mode`**：`T2VA` 纯文本 / `I2VA` 首帧推动（最常用）/ `FL2VA` 首尾帧插值 / `L2VA` 锁尾帧 / `Ref2VA` 多图锁脸。选型见 `{baseDir}/references/comfyui-h3.md`。下游若不使用 H3、换成其他视频模型，模式与提示词写法衔接 `novel-storyboard` 的 `references/toonflow-video-templates.md`（三种异机型模板与共用约束），不要在这里另起一套写法。
 2. **`qwen`**：每切一条。`canvas` 是 `image_1`（必须是场景，它决定画布与光位），`refs` 是 `image_2..N`（画内每个角色、每个道具都要挂，漏一件模型就当场发明一件），`prompt` 是指令式中文编辑提示词。写法见 `{baseDir}/references/qwen-i2i.md`。
 3. **`tailFrom` / `dedupeFrames`**：这一段要抽上一段末帧当首帧时填。生产者末镜必须已经写了稳焦静止（`tail-anchor` 门盯着），`dedupeFrames` 是头部要裁掉的重复帧数。
 4. **`enter` / `exit` / `sound`**：段与段之间的三句交代。`enter` 写「从上一段接过来什么状态、新出现的人从哪来」，`exit` 写「把世界留在什么状态」，`sound.carry` / `keep` 把底噪连成一条线。写法与四种合法转场见 `{baseDir}/references/continuity.md`。
@@ -177,7 +177,7 @@ node {baseDir}/scripts/comfy-production.mjs post production.json --storyboard st
 
 ### 汇报口径
 
-一句话说清：几段、总帧数、几个 Ref2VA、几个尾帧接力、几道门没过。**不要说「已出图」**——这一步不存在。
+一句话说清：几段、总帧数、几个 Ref2VA、几个尾帧接力、几道门没过。**不要说「已出图」**——这一步不存在。产出后按本技能质量门再自检一轮（重点查内部一致性），问题先修再汇报。
 
 ### 自测
 

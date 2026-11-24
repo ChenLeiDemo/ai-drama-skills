@@ -59,6 +59,8 @@ metadata:
 
 例外是用户手上已经有 `cast.json`（此前单独跑过 `novel-characters`）：那就拿来当人物原料，角色、别名、关系都是现成的，不用重拆原文。分档按 `importance` 反向映射：protagonist/major → `lead`，supporting → `support`，minor → `functional`。
 
+**题材在这里不只是一个标签（Toonflow 叙事类型方法已融入本步）**：定题材时读取 `{baseDir}/references/toonflow-narrative-genres.md` 的选型方法，从十二类叙事（甜宠言情、悬疑推理、热血少年、喜剧搞笑、科幻末世、都市职场、古风仙侠、历史史诗、家庭温情、青春成长、恐怖灵异、心理博弈）里选定一个主类型，可以再定一个辅助类型，并把选型结论（主类型、辅助类型、选用哪套节拍骨架）写进改编说明。后面排爽点与写分集梗概都按主类型的节拍骨架推进，不再只给 `params.genre` 填一个词。
+
 ### Step 1 — 定位输入
 
 材料优先级，写死：
@@ -92,6 +94,8 @@ node {baseDir}/scripts/novel-outline.mjs chunk <book.txt> <workdir>
 
 读 `{baseDir}/references/outline-pass.md` 和 `{baseDir}/references/schema.md`，照着做。产出骨架四块（adaptation / characters / scenes / beats），写成 `<workdir>/outline.json`。
 
+排 beats 时对照 `{baseDir}/references/toonflow-narrative-genres.md` 里主类型的节拍骨架逐段落位：骨架要求出现的节拍（该类型的开局钩子、中段反转、终局兑现等）要在 beats 里有对应落点，落点集数写清楚。骨架与原文冲突时以原文和用户拍板为准，并把取舍记进改编说明。
+
 ```bash
 node {baseDir}/scripts/novel-outline.mjs validate <workdir>/outline.json --stage beats
 ```
@@ -108,6 +112,8 @@ node {baseDir}/scripts/novel-outline.mjs validate <workdir>/outline.json --stage
 
 合并时按 ep 排序拼进 outline.json 的 `episodes`。
 
+每批梗概动笔之前，先看主类型节拍骨架在本批集数区间要求什么节拍与爽点形态（`{baseDir}/references/toonflow-narrative-genres.md`），梗概的爽点类型与间隔要与骨架对得上，不要写着写着换成另一类的节奏。
+
 ### Step 6 — 校验 ⛔ 不能跳
 
 ```bash
@@ -117,6 +123,8 @@ node {baseDir}/scripts/novel-outline.mjs validate <输出目录>/<书名>-outlin
 14 道质量门全部是代码，不是给你读的清单：主角组 1–5 人、重要配角 ≤ 10、功能性角色 ≤ 10、主场景不超上限（随集数动态，60 集 → 10）、叙事道具 ≤ 8 件、一次性场景有规避方案、爽点间隔 ≤ 3 集无真空、第 1 集有钩子、大爆点不压最后一集、每集三栏齐全、三人同框有拆解、生成难点进预警、引用完整无失业角色无空转场景无零集道具、叙述体无对白。
 
 **有违规逐条修，改完重跑，直到通过。**
+
+脚本的 14 道门之外，再人工过一遍 Toonflow 类型复核（`{baseDir}/references/toonflow-narrative-genres.md` 文末的类型复核清单，不新增代码门）：主类型的节拍骨架是否逐段兑现、爽点形态是否符合该类型、辅助类型有没有喧宾夺主。复核不过先改骨架与梗概再交付，不要带着类型跑偏过门。
 
 ### Step 7 — 输出与汇报
 
@@ -130,7 +138,7 @@ node {baseDir}/scripts/novel-outline.mjs render <书名>-outline.json --html > o
 
 report 里自带：KPI 带、关键决策（拍板三件事，大爆点列表和角色位统计自动算）、爽点时间轴（空档标在轴上，超阈值变红）、每集调度矩阵、场景概览卡、资产量折算、质量门（✓/✗ 烘进页面，未过弹病灶横幅）、导出 JSON 按钮（下载的就是 outline.json 原样）。
 
-汇报一句话说清：几集、几个角色几个场景、爽点分布、报告路径；被截断或有没过的门要明说。
+汇报一句话说清：几集、几个角色几个场景、爽点分布、报告路径；被截断或有没过的门要明说。产出后按本技能质量门再自检一轮（重点查内部一致性），问题先修再汇报。
 
 最终落地：
 
@@ -176,3 +184,7 @@ node {baseDir}/scripts/selftest.mjs
 ## 自带样例
 
 `{baseDir}/examples/渡口-outline.json`：把短故事《渡口》（novel-characters 的自带样例）改编成 6 集 × 2 分钟的微型大纲，四角色三场景四爽点，全部质量门通过。当质量基准，也是自测夹具。
+
+## 参考索引 · Toonflow 叙事类型方法
+
+- `{baseDir}/references/toonflow-narrative-genres.md`：十二类叙事的选型方法、节拍骨架与类型复核清单。已融入正文：Step 0 定题材时选型，Step 3 排 beats 时按骨架落位，Step 5 写分集梗概时对节奏，Step 6 校验后按文末清单人工复核。具体使用方法看正文各步，不要只在交付之前才翻。

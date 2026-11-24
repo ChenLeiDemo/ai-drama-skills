@@ -156,6 +156,8 @@ node {baseDir}/scripts/novel-characters.mjs merge <workdir> --apply merges.json 
 - 该角色归并后的 `name` / `aliases` / `notes` / `quotes`
 - **同批其他角色的名字**（避免长相声线撞车）
 
+**出卡时同步使用 Toonflow 角色设计两张表（已融入本步）**：读取 `{baseDir}/references/toonflow-character-design.md`。写外观与形象提示词时逐人过辨识维度表（头脸轮廓、五官结构、肤发特征、体态、基础服装、气质呈现），同批角色至少在其中三项上作出不同选择，解决同批角色共享同一张模板脸的问题；写造型与变体时逐人过造型分层表（基础身份、妆容、发型与头饰、内搭、主服与外套、鞋与配饰），每一层写清设计决定与保持边界，变体只改点名的层、其余层原样保留，解决变体换装换成另一个人的问题。它配合 `profile-pass.md` 的识别锚点与同批区分纪律使用。
+
 按 `profile-pass.md` 完成身份—外观语义自检后再交卡：人物档案、形象提示词、本地译文与设定图主体不能各说一种身份。大纲决定名单和改编取舍，原文观察补足外形依据；不要只给大纲而跳过 Step 2–4 的原文扫描。
 
 角色卡 JSON 写到 `<workdir>/card-<slug>.json`。**断点续跑**：`card-<slug>.json` 已存在的角色不必重跑。
@@ -183,6 +185,8 @@ node {baseDir}/scripts/novel-characters.mjs validate <cast.json> <book.txt>
 记得带上 `--lang`（Step 0 定的）。检查：结构、`importance` 枚举、**引文逐字**、**出图提示词不含人名**、**语言分工**（人类字段跟随 `lang`；`image.prompt` 写中文长版，反向词与设定图仍是英文）、以及**非内置语言必须带 `ui`**。
 
 **有违规就按报错逐条修，改完重跑，直到通过。** 这四类错模型真的会犯——这套检查就是被真实输出打出来的。
+
+代码检查之外再人工核对 `{baseDir}/references/toonflow-character-design.md` 的两张表（不新增代码门）：随机抽两个同档角色并排比对辨识维度，六项里说不出三项差异的回去改外观；每个有变体的角色逐层核对造型分层表，未点名的层出现变化的改回与基础造型一致。
 
 ### Step 8 — 输出
 
@@ -212,7 +216,7 @@ report.html 的样式约定见 `{baseDir}/references/report-style.md`——要�
 
 ### Step 9 — 汇报
 
-一句话说清：角色数、报告路径。校验一次没过的话，说明修了什么。原文被截断要明确说清楚。
+一句话说清：角色数、报告路径。校验一次没过的话，说明修了什么。原文被截断要明确说清楚。产出后按本技能质量门再自检一轮（重点查内部一致性），问题先修再汇报。
 
 **不要说「已出图」或「已生成设定图」**——这一步不存在了，交付的是提示词。
 
@@ -240,3 +244,7 @@ node {baseDir}/scripts/selftest.mjs
 ## 自带样例
 
 `{baseDir}/examples/渡口.txt` 是一篇短故事，4 个角色，其中货郎全程只有绰号、船夫只被叫过「老伯」——专门用来验别名归并。对应产出 `渡口-cast.json` / `渡口-cast.md` 可以当质量基准，也是校验的自检夹具。
+
+## 参考索引 · Toonflow 角色设计
+
+- `{baseDir}/references/toonflow-character-design.md`：辨识维度表与造型分层表。已融入正文：Step 6 出卡时逐人过两张表定外观与变体边界，Step 7 校验后人工抽查同批区分与变体一致性。具体使用方法看正文各步。

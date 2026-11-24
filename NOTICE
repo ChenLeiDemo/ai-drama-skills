@@ -20,6 +20,11 @@ to the original work:
 
   - added skills/comfy-production (new files, Apache-2.0)
   - scripts/report-selftest.mjs: syntax assertion uses new vm.Script instead of new Function
+  - added references/toonflow-*.md to skills/novel-outline, skills/novel-characters,
+    skills/novel-art, skills/novel-script and skills/novel-storyboard: creative
+    methodology learned from Toonflow-app (MIT License), internalized and
+    rewritten in this repository's own terms; the source of each file is noted
+    in its header
 
 The bundled sample story `skills/storycast/examples/渡口.txt` is an original
 work written for this project and is covered by the same license.

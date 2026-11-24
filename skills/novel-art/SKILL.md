@@ -66,6 +66,8 @@ metadata:
 
 有 cast.json（novel-characters 的产出）也带上——校验「提示词不含角色名」要用。
 
+**画风在这一步先定，不要留到出图（Toonflow 视觉风格选型已融入本步）**：读取 `{baseDir}/references/toonflow-visual-styles.md`，按项目视觉约定的八个维度，从十一种画风里为全剧选定一种，选型结论（画风名称、正向锚词、规避项）记进工作记录，后面每个场景与道具的设计都以它为统一口径。既有纪律不变：画风词仍由出图那一刻的调用方统一附加，不写进 art.json 的单条提示词，这份文件提供的是选型依据与约定内容。
+
 ### Step 1 — seed 骨架（有 outline.json 才有这步）
 
 ```bash
@@ -86,6 +88,8 @@ node {baseDir}/scripts/novel-art.mjs seed <outline.json> > <workdir>/art.json
 
 核心要求都在 scene-pass.md 里，最重的三条：锚点要**可画可认可核对**（「补丁船篷」是锚点，「陈旧的氛围」是形容词）；光照状态**从分集反推**，不写用不上的全家桶；**能做变体就别开新景**。
 
+填场景与道具的状态变体之前先读 `{baseDir}/references/toonflow-asset-design.md`（已融入本步）：每个资产先按设计卡记清应当记录的决策，再照九类材质的状态痕迹表写变体（正常质感、使用痕迹、损伤与环境变化分别是什么样，不要只写「变旧了」）；做变体时逐项过连带影响清单，时段、天气、机位、剧情状态变化各自要同步复查哪些锚点与光照，漏复查的变体会在跨集对账时漂。
+
 **叙事道具优先吃大纲**：`outline.json` 从 1.1.0 起带 `props`，`seed` 会把道具表连同「承载什么」「托起哪几个爽点」「哪几集出现」一起搬过来，这一层只填设计字段（尺度、锚点、状态变体、白底提示词）。**大纲没有 props 就从原文提取**，那时这步是模型的活：只收**有特写、跨集出现、承载剧情**的，通常 3–8 件，跟主角数量一个量级。每件按 `references/prop-pass.md` 填：戏剧功能、锚点、状态变体、尺度、白底无手提示词。皮箱这种「跟人走的道具」就该在这——塞进场景锚点和角色画像都不对。
 
 ### Step 3 — 校验 ⛔ 不能跳
@@ -100,6 +104,8 @@ node {baseDir}/scripts/novel-art.mjs validate <art.json> --cast <cast.json>
 
 **有违规逐条修，改完重跑，直到通过。**
 
+代码门之外再人工核对两项 Toonflow 检查（不新增代码门）：全剧画风选型结论是否只有一个、且每个资产的设计取向与它一致（`{baseDir}/references/toonflow-visual-styles.md` 的选型与落实检查）；每个状态变体是否能指到材质状态痕迹的依据、且连带影响清单逐项复查过（`{baseDir}/references/toonflow-asset-design.md`）。
+
 ### Step 4 — 输出与汇报
 
 ```bash
@@ -110,7 +116,7 @@ node {baseDir}/scripts/novel-art.mjs render <剧名>-art.json --html > art-repor
 
 报告界面默认中文；用户要英文界面就加 `--lang en`（或在 art.json 顶层写 `"lang": "en"`，`--lang` 优先）。`render` 默认去 art.json 同级的 `images/<slug>-sheet.png` 找图（场景和道具都找），图在别处就用 `--images <目录>` 指过去——**本 skill 不产生这些文件**，下游出完图重跑一次 render 就能嵌进报告。报告含：KPI 带、场景清单、场景设定卡、道具清单、道具设定卡（锚点核对表 / 状态变体 / 提示词包全带复制按钮）、质量门面板、导出 JSON（下载的就是 art.json 原样）。
 
-汇报一句话说清：几个场景（主场景/变体各几）、几件道具、锚点总数、报告路径；没过的门明说。
+汇报一句话说清：几个场景（主场景/变体各几）、几件道具、锚点总数、报告路径；没过的门明说。产出后按本技能质量门再自检一轮（重点查内部一致性），问题先修再汇报。
 
 **不要说「已出图」**——这一步不存在了，交付的是提示词。
 
@@ -155,3 +161,8 @@ node {baseDir}/scripts/selftest.mjs
 ## 自带样例
 
 `{baseDir}/examples/渡口-art.json`：《渡口》三场景 + 两件叙事道具（旧皮箱、县衙旧砚）的完整设定，全部质量门通过（含对着 novel-characters 样例 cast 的角色名检查）。当质量基准，也是自测夹具。
+
+## 参考索引 · Toonflow 视觉风格与资产设计
+
+- `{baseDir}/references/toonflow-visual-styles.md`：项目视觉约定的八个维度与十一种画风速览。已融入正文：Step 0 定输入时为全剧选定画风并记选型结论，Step 3 校验后人工核对全剧口径一致。
+- `{baseDir}/references/toonflow-asset-design.md`：资产设计卡、九类材质的状态痕迹表、变体连带影响清单。已融入正文：Step 2 填状态变体之前先读并逐项过清单，Step 3 校验后人工核对变体依据。具体使用方法看正文各步。
