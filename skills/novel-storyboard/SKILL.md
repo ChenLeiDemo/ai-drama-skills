@@ -1,6 +1,6 @@
 ---
 name: novel-storyboard
-version: 2.1.0
+version: 2.2.0
 description: |
   给 AI 短剧出分镜：三层结构——段（一次视频生成，≤15 秒）→ 分镜（段内 2–5 秒的剪切，认领剧本节拍）
   → 分镜图（每切一张关键帧：主分镜图钉 0.00 秒，子分镜图钉各自切点）。
@@ -90,7 +90,7 @@ node {baseDir}/scripts/novel-storyboard.mjs seed <script.json> --eps 1-3 --aspec
 
 流程：**先按剧情单元分段**（每段 9–15 秒、不跨场），**段内切 2–5 秒的分镜**（对话正反打、关键动作插入特写、进场三件套——切镜语法都在 storyboard-pass.md），每切写一条分镜图提示词（中文，直呼角色名）、一段镜头正文 `shot`（中文，通用身份）和六个构图字段；每段写 `blocking`、`soundscape`，有配乐再写 `music`。全部分镜图与下游生成图必须保持顶层 `aspectRatio` 指定的同一画幅。
 
-切镜时同步使用 Toonflow 镜头工艺（已融入本步）：景别拿不准时查 `{baseDir}/references/toonflow-shot-craft.md` 的景别与信息用途对照表，按这一切要让观众知道什么选景别，不要按习惯选；情绪不要只写成形容词，照该文件的情绪落成可见表演对照表落成可见动作；排长台词镜头时使用它的表演语速分档复查单镜容量（只用于分镜阶段复查，剧本阶段的台词折算口径不变）；复查（按表演语速含停顿核算）不过时，先拆镜或调整切点解决，不回改剧本台词与剧本折算口径，拆无可拆仍装不下时标记该镜回剧本阶段处理并在汇报中明示，代码门与人工复查结论冲突时按这条裁决；每场先按空间基准的九格表述与轴线纪律定空间基准，并写进该场第一段的 `blocking` 字段，同场后续镜头不越轴。
+切镜时同步使用 Toonflow 镜头工艺（已融入本步）：景别拿不准时查 `{baseDir}/references/toonflow-shot-craft.md` 的景别与信息用途对照表，按这一切要让观众知道什么选景别，不要按习惯选；情绪不要只写成形容词，照该文件的情绪落成可见表演对照表落成可见动作；排长台词镜头时使用它的表演语速分档复查单镜容量（只用于分镜阶段复查，剧本阶段的台词折算口径不变）；复查（按表演语速含停顿核算）不过时，先拆镜或调整切点解决，不回改剧本台词与剧本折算口径，拆无可拆仍装不下时标记该镜回剧本阶段处理并在汇报中明示，代码门与人工复查结论冲突时按这条裁决；每场先按空间基准的九格表述与轴线纪律定空间基准，并写进该场第一段的 `blocking` 字段，同场后续镜头不越轴。同场排镜前先按 `{baseDir}/references/s10-lighting.md` 定场景光照表（光源、光比、视觉中心、正反打受光），再推每镜受光；逐镜只写与表不同的地方。
 
 **每段的镜头正文照 `{baseDir}/references/shot-writing.md` 写**（协议无关：一切一个运镜、动作要做得完、台词逐字、声音分层、不写画风）。发给哪个视频服务，就再套哪份协议语法：MiniMax H3 见 `{baseDir}/references/h3-prompt.md`，Seedance 见 `{baseDir}/references/seedance-prompt.md`。
 
@@ -199,4 +199,5 @@ node {baseDir}/scripts/selftest.mjs
 
 - `{baseDir}/references/toonflow-shot-craft.md`：景别与信息用途对照、情绪外化对照、表演语速分档、空间基准与轴线纪律、连续性检查清单。已融入正文：Step 2 切镜时选景别、落表演、复查单镜容量与轴线，Step 3 交付之前按连续性清单人工复查。
 - `{baseDir}/references/toonflow-frame-craft.md`：取帧判断与提示词段落构成。已融入正文：Step 2 写每切 `frame` 之前先按它取帧，Step 3 抽查取帧是否正确。
+- `{baseDir}/references/s10-lighting.md`：场景光照表五项与正反打受光对账（老唐 s10 布光回灌）。已融入正文：Step 2 每场排镜前先定光照表，再推每镜受光。
 - `{baseDir}/references/toonflow-video-templates.md`：异机型三种视频模板与共用约束。已融入正文：Step 2 在下游明确换用其他视频模型时才选模板。具体使用方法看正文各步。

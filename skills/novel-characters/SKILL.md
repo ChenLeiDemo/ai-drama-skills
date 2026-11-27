@@ -13,7 +13,7 @@ allowed-tools:
   - Task
   - Glob
 metadata:
-  version: 2.1.0
+  version: 2.2.0
   triggers:
     - novel-characters
     - 拆角色
@@ -158,6 +158,8 @@ node {baseDir}/scripts/novel-characters.mjs merge <workdir> --apply merges.json 
 
 **出卡时同步使用 Toonflow 角色设计两张表（已融入本步）**：读取 `{baseDir}/references/toonflow-character-design.md`。写外观与形象提示词时逐人过辨识维度表（头脸轮廓、五官结构、肤发特征、体态、基础服装、气质呈现），每个角色至少在维度里作出两到三项跨角度可辨的选择，同批角色两两之间至少两项不同（与该文件的辨识维度表同一把尺），解决同批角色共享同一张模板脸的问题；写造型与变体时逐人过造型分层表（基础身份、妆容、发型与头饰、内搭、主服与外套、鞋与配饰），每一层写清设计决定与保持边界，变体只改点名的层、其余层原样保留，解决变体换装换成另一个人的问题。它配合 `profile-pass.md` 的识别锚点与同批区分纪律使用。
 
+**出卡时同步读行为层（已融入本步）**：`{baseDir}/references/s33-behavior.md` 管「会怎么做、怎么说」——重要人物的关键选择按四要素核（获知、办法、收益风险、为何选这条），重要关系记双边账，主要对手推演其不受干扰时的计划（防降智），画像里给重要人物记四项说话倾向供剧本侧取用。
+
 按 `profile-pass.md` 完成身份—外观语义自检后再交卡：人物档案、形象提示词、本地译文与设定图主体不能各说一种身份。大纲决定名单和改编取舍，原文观察补足外形依据；不要只给大纲而跳过 Step 2–4 的原文扫描。
 
 角色卡 JSON 写到 `<workdir>/card-<slug>.json`。**断点续跑**：`card-<slug>.json` 已存在的角色不必重跑。
@@ -248,3 +250,4 @@ node {baseDir}/scripts/selftest.mjs
 ## 参考索引 · Toonflow 角色设计
 
 - `{baseDir}/references/toonflow-character-design.md`：辨识维度表与造型分层表。已融入正文：Step 6 出卡时逐人过两张表定外观与变体边界，Step 7 校验后人工抽查同批区分与变体一致性。具体使用方法看正文各步。
+- `{baseDir}/references/s33-behavior.md`：选择四要素、关系双边账、对手计划推演、四项说话倾向（老唐故事创作 s3.3 回灌）。已融入正文：Step 6 出卡时同步读，管行为与声音层，与视觉辨识并行。

@@ -25,6 +25,15 @@ to the original work:
     methodology learned from Toonflow-app (MIT License), internalized and
     rewritten in this repository's own terms; the source of each file is noted
     in its header
+  - added references/s10-lighting.md to skills/novel-storyboard,
+    references/s31-scene-craft.md to skills/novel-art,
+    references/s33-dialogue-craft.md to skills/novel-script and
+    references/s33-behavior.md to skills/novel-characters, plus related
+    workflow text in skills/novel-outline: creative methodology learned from
+    the Laotang skill packs (cinematic storyboard s10, scene skill 3.1 and
+    storycraft s3.3, provided by the user), internalized and rewritten in
+    this repository's own terms; the source of each file is noted in its
+    header
 
 The bundled sample story `skills/storycast/examples/渡口.txt` is an original
 work written for this project and is covered by the same license.
