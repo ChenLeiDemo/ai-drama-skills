@@ -99,7 +99,7 @@ export const MIN_LONG_PROMPT = 300;
 
 /*
  * 道具尺度参照：AI 经常把手持道具画成家具尺寸——实拍不存在的坑。
- * scale 是中文枚举，出图提示词里必须出现对应的英文短语，validate 会对着查。
+ * scale 是中文枚举，出图提示词里必须出现中文尺度词或对应的英文短语，validate 会对着查。
  */
 export const PROP_SCALES = {
   手持级: 'handheld scale',
@@ -177,7 +177,7 @@ export function gateReport(doc, castNames = null) {
     // 状态 ≥1：合上/打开、藏着/摊开——每个状态都是一张要单独生成的参考
     if (!Array.isArray(pr?.states) || pr.states.length === 0) bad.states.push(label);
 
-    // 尺度参照：scale 枚举 + 提示词里必须出现对应英文短语
+    // 尺度参照：scale 枚举 + 提示词里必须出现中文尺度词或对应英文短语
     const scaleEn = PROP_SCALES[pr?.scale];
     if (!scaleEn) {
       bad.scale.push(`${label}（scale 必须是 ${Object.keys(PROP_SCALES).join('/')}）`);
@@ -242,7 +242,7 @@ export function validateArt(doc, castNames = null) {
     }
     for (const st of pr?.states ?? []) {
       if (!thText(st?.state)) p(`[${label}] 状态缺 state（合上/打开……）`);
-      if (!thText(st?.prompt)) p(`[${label}] 状态「${st?.state ?? '?'}」缺 prompt（英文）`);
+      if (!thText(st?.prompt)) p(`[${label}] 状态「${st?.state ?? '?'}」缺 prompt`);
     }
     const img = pr?.image;
     if (!img || typeof img !== 'object') {
@@ -284,7 +284,7 @@ export function validateArt(doc, castNames = null) {
     }
     for (const l of s?.lighting ?? []) {
       if (!thText(l?.state)) p(`[${label}] 光照状态缺 state（晨雾/夜戏/黄昏……）`);
-      if (!thText(l?.prompt)) p(`[${label}] 光照「${l?.state ?? '?'}」缺 prompt（英文）`);
+      if (!thText(l?.prompt)) p(`[${label}] 光照「${l?.state ?? '?'}」缺 prompt`);
     }
 
     const img = s?.image;

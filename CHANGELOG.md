@@ -1,5 +1,14 @@
 # Changelog
 
+## 2.2.2 — novel-art 语言口径对齐：清掉「提示词全部英文」旧表述 — 2026-11-28
+
+**novel-art 升至 2.2.2。** 纯表述修复、无行为变更：现行口径（2026-11-24 起）是主提示词中文长版、英文只留给反向提示词与标签，但技能里残留了改版前的旧说法，与 SKILL.md、prompting.md 及校验器实际行为矛盾，本版逐条对齐：
+
+- `references/schema.md` 硬规则第 4 条「出图提示词全部英文」改为语言分工表述（主提示词含光照/状态写中文长版，反向与标签英文）；硬规则第 2、7 条「都有英文提示词」改为「都落成完整提示词（中英文均可）」；硬规则第 8 条与字段表的尺度要求改为「中文尺度词或对应英文短语，任一即可」（校验器本就两者都认）。
+- `README.md` 道具尺度一行、`README.en.md` 两处（"Image prompts are always English"、"all prompts English"）同步对齐。
+- `scripts/novel-art.mjs` 两处尺度注释与两处「缺 prompt（英文）」报错文案同步改口径（检查逻辑未动）。
+- 回归：在用版与仓库版 selftest 均 157 项全过；重制版真实 art.json（6 场景＋10 道具）validate 全过。
+
 ## 2.2.1 — 资产提示词去冗余：停产 promptLocal 与英文 sheet — 2026-11-28
 
 **novel-characters 与 novel-art 升至 2.2.1。** 生产中确认两类字段纯属浪费 token，本版从规范源头停产：
