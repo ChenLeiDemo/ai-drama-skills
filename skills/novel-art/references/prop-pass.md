@@ -24,7 +24,7 @@
 
 4. **状态变体从剧情反推。**皮箱有合上/打开，状纸有藏着/摊开——道具的状态弧跟着剧情走，每个状态一条中文提示词，会各生成一张参考。没有状态变化的道具写一个主状态即可。
 
-5. **尺度必须写死。**`scale` 三档（手持级/桌面级/家具级），`image.prompt` 和 `image.sheet` 里**必须出现对应尺度词**——中文「手持级 / 桌面级 / 家具级」或英文短语（handheld scale / tabletop scale / furniture scale）都认。AI 把手持道具画成家具尺寸是高频事故，validate 会对着查。
+5. **尺度必须写死。**`scale` 三档（手持级/桌面级/家具级），`image.prompt` 里**必须出现对应尺度词**（旧文件的 `image.sheet` 若有也会一并查）——中文「手持级 / 桌面级 / 家具级」或英文短语（handheld scale / tabletop scale / furniture scale）都认。AI 把手持道具画成家具尺寸是高频事故，validate 会对着查。
 
 6. **白底、无人、无手。**道具参考图要被贴进各种镜头，必须纯白背景可抠；**拿着道具的手是最常见的污染**，反向提示词必须禁 hands/fingers。validate 三样都查。
 

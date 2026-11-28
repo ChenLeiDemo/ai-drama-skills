@@ -16,7 +16,7 @@ Outputs `art.json`, a Markdown report, and a self-contained `art-report.html`. R
 
 ## The quality gates are code
 
-Same stance as the other two skills: **a checklist the model grades itself on is worthless.** Ten deterministic gates — anchors 3–5 (scenes and props alike), lighting states ≥1 per scene, people banned in negatives everywhere, all prompts English, no character names (checked with `--cast`, explicitly reported as skipped without it), variant references complete, plus four prop-specific gates: **states ≥1**, **scale phrase present in prompts**, **hands banned in negatives**, **pure white background in the sheet**. The selftest defeats every gate on purpose.
+Same stance as the other two skills: **a checklist the model grades itself on is worthless.** Ten deterministic gates — anchors 3–5 (scenes and props alike), lighting states ≥1 per scene, people banned in negatives everywhere, all prompts English, no character names (checked with `--cast`, explicitly reported as skipped without it), variant references complete, plus four prop-specific gates: **states ≥1**, **scale phrase present in prompts**, **hands banned in negatives**, **pure white background in the prompt (legacy files: in the sheet)**. The selftest defeats every gate on purpose.
 
 ## The three-skill relay
 
@@ -40,9 +40,10 @@ node scripts/novel-art.mjs render art.json --html --lang en   # English report U
 
 ## Sheet layout spec
 
-**This skill does not generate images.** The deliverable is `image.sheet` — a complete layout
-instruction for whatever generates the image downstream, where the model, the style and the
-aspect get chosen. None of those three can be answered at this layer.
+**This skill does not generate images.** The deliverable is the Chinese master prompt — the
+layout instruction rides in its closing layout sentence (the legacy English `image.sheet`
+field is deprecated and no longer produced). Downstream picks the model, the style and the
+aspect; none of those three can be answered at this layer.
 
 One per scene and per prop, both using the **master-view + L-shaped detail border** layout
 (bottom and right edges). Scene details = anchor close-ups; prop details = anchor close-ups +

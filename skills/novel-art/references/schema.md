@@ -11,7 +11,7 @@
     "summary": "设计意图：这个空间讲什么故事……",
     "anchors": [{ "name": "补丁船篷", "desc": "……" }],
     "lighting": [{ "state": "晨雾", "prompt": "dense white morning fog ..." }],
-    "image": { "prompt": "…", "negativePrompt": "…", "sheet": "…", "tags": [] },
+    "image": { "prompt": "…", "negativePrompt": "…", "tags": [] },
     "variantOf": "S02", "changes": "换背板 + 芦苇前景",
     "usage": { "episodes": [1, 6], "beats": ["悬念钩"] }
   }],
@@ -21,7 +21,7 @@
     "anchors": [{ "name": "绿锈铜扣", "desc": "……" }],
     "states": [{ "state": "合上", "prompt": "the suitcase closed ..." }],
     "relatedScenes": ["S01"], "carriedBy": ["沈知微"],
-    "image": { "prompt": "…", "negativePrompt": "…", "sheet": "…", "tags": [] },
+    "image": { "prompt": "…", "negativePrompt": "…", "tags": [] },
     "usage": { "episodes": [1, 6], "beats": ["悬念钩"] }
   }]
 }
@@ -47,7 +47,8 @@
 | `lighting` | ≥1 个 | 中文 | **光照状态**：AI 换时段是重新生成不是重新打灯，每个状态必须落成完整提示词 |
 | `image.prompt` | 是 | **中文长版** | 主视角设定板提示词：内容层 + 三区版面，≥300 字，**空景无人**；写法见 `prompting.md` |
 | `image.negativePrompt` | 是 | **英文** | **必须禁人**（people/figure/…），这是空景的硬保证 |
-| `image.sheet` | 是 | **英文** | 环境设定图完整版面指令（见 `sheet.md`），必须整段包含 `scene-pass.md` 两档表面处理句之一 |
+| `image.prompt`（续） | — | — | 表面处理句（`scene-pass.md` 两档二选一）与版面句都写进主提示词，版面句置于结尾（规格见 `sheet.md`） |
+| `image.sheet` | 否 | **英文** | **已废弃，不再产出**（旧版的英文版面指令，与中文版面句重复，2026-11-28 定）。保留可选：旧文件带着照样过校验 |
 | `image.tags` | 是 | 英文 | 标签数组：题材、材质、光照、色板。不打画风标，见 `scene-pass.md` |
 | `variantOf` | 否 | — | 变体的母场景 id。AI 生成一个新景很便宜，但**变体复用母场景资产更一致**——outline 里带 reusePlan 的场景优先做成变体 |
 | `changes` | variantOf 时必填 | 中文 | 相对母场景改了什么（换时段/换天气/换前景/删道具） |
@@ -67,7 +68,7 @@
 | `carriedBy` | 否 | 中文 | 谁带着它，自由文本 |
 | `image.prompt` | 是 | **中文长版** | 道具设定板提示词：内容层 + 三区版面，≥300 字，**带中文尺度词、纯白底、无人无手**；写法见 `prompting.md` |
 | `image.negativePrompt` | 是 | **英文** | **必须禁人且禁手**（hands/fingers） |
-| `image.sheet` | 是 | **英文** | 设定图版面指令，**必须写明 pure white background** + 同一套两档表面处理句之一 |
+| `image.sheet` | 否 | **英文** | **已废弃，不再产出**（同场景）。纯白底与表面处理句改写进 `image.prompt` 的版面句，校验查主提示词（旧文件回退查 sheet） |
 | `usage` | 否 | — | `{episodes, beats}` |
 
 ## 硬规则（10 道质量门，全是代码）
@@ -84,7 +85,7 @@
 7. 状态 ≥1 且都有英文提示词
 8. 尺度参照写进提示词（scale 枚举对应的英文短语）
 9. 反向提示词禁手——拿着道具的手是最常见污染
-10. 设定图纯白背景可抠
+10. 设定图纯白背景可抠（写在主提示词版面句里，旧文件回退查 `image.sheet`）
 
 ## 校验
 

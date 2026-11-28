@@ -263,7 +263,7 @@ ok(validateArt({}).some((x) => x.includes('source')), '缺书名被拦');
 {
   const d = clone();
   delete d.scenes[0].image.sheet;
-  ok(validateArt(d).some((x) => x.includes('image.sheet')), '缺设定图提示词被拦');
+  ok(!validateArt(d).some((x) => x.includes('image.sheet')), 'image.sheet 已可选：删掉不报错（旧文件带它也兼容）');
 }
 {
   const d = clone();
@@ -394,7 +394,8 @@ eq(FIXTURE.props.length, 2, '样例带两件叙事道具');
 {
   const d = clone();
   d.props[0].image.sheet = d.props[0].image.sheet.replace(/pure white background/gi, 'soft grey backdrop');
-  ok(!gate(d, 'prop-white').ok, '设定图不是白底被拦——道具图要能抠');
+  d.props[0].image.prompt = d.props[0].image.prompt.replace(/pure white background/gi, 'soft grey backdrop');
+  ok(!gate(d, 'prop-white').ok, '设定图不是白底被拦——道具图要能抠（白底写在主提示词版面句里，sheet 仅旧文件回退）');
 }
 // 共用门也覆盖道具
 {

@@ -44,7 +44,7 @@ export function seedFromOutline(outline) {
       summary: '',
       anchors: [],
       lighting: [],
-      image: { prompt: '', negativePrompt: '', sheet: '', tags: [] },
+      image: { prompt: '', negativePrompt: '', tags: [] },
       // 从 outline 搬来的事实，不用再想
       ...(s.reusePlan ? { seedNote: `outline 的复用方案：${s.reusePlan}——考虑做成某个主场景的变体（variantOf + changes）` } : {}),
       usage: { episodes, beats: carried },
@@ -69,7 +69,7 @@ export function seedFromOutline(outline) {
       states: [],
       relatedScenes: [],
       carriedBy: [],
-      image: { prompt: '', negativePrompt: '', sheet: '', tags: [] },
+      image: { prompt: '', negativePrompt: '', tags: [] },
       // 从 outline 搬来的事实，不用再想
       usage: { episodes, beats: (pr.beatIds ?? []).map((id) => beatType.get(id)).filter(Boolean) },
     };
@@ -182,7 +182,7 @@ export function gateReport(doc, castNames = null) {
     if (!scaleEn) {
       bad.scale.push(`${label}（scale 必须是 ${Object.keys(PROP_SCALES).join('/')}）`);
     } else {
-      const texts = [pr?.image?.prompt, pr?.image?.sheet].filter((v) => typeof v === 'string');
+      const texts = [pr?.image?.prompt, pr?.image?.sheet].filter((v) => typeof v === 'string' && v.trim());
       const hit = (v) => v.includes(scaleEn) || v.includes(pr.scale);
       if (!texts.every(hit)) bad.scale.push(`${label}（提示词缺「${scaleEn}」或中文「${pr.scale}」）`);
     }
@@ -191,7 +191,7 @@ export function gateReport(doc, castNames = null) {
     if (!HANDS_BAN.test(pr?.image?.negativePrompt ?? '')) bad.hands.push(label);
 
     // 白底：道具参考图要被贴进各种镜头，必须纯白背景可抠
-    if (!/white background|纯白|白底|白色背景/i.test(pr?.image?.sheet ?? '')) bad.whitebg.push(label);
+    if (!/white background|纯白|白底|白色背景/i.test(`${pr?.image?.prompt ?? ''} ${pr?.image?.sheet ?? ''}`)) bad.whitebg.push(label);
   }
 
   add('anchors', `一致性锚点 ${ANCHOR_RANGE[0]}–${ANCHOR_RANGE[1]} 个`, scenes.length + props.length > 0 && bad.anchors.length === 0, bad.anchors.join('；'));
@@ -248,7 +248,7 @@ export function validateArt(doc, castNames = null) {
     if (!img || typeof img !== 'object') {
       p(`[${label}] 缺 image`);
     } else {
-      for (const f of ['prompt', 'negativePrompt', 'sheet']) {
+      for (const f of ['prompt', 'negativePrompt']) {
         if (!thText(img[f])) p(`[${label}] image.${f} 缺失或为空`);
       }
       if (!Array.isArray(img.tags)) p(`[${label}] image.tags 必须是数组`);
@@ -291,7 +291,7 @@ export function validateArt(doc, castNames = null) {
     if (!img || typeof img !== 'object') {
       p(`[${label}] 缺 image`);
     } else {
-      for (const f of ['prompt', 'negativePrompt', 'sheet']) {
+      for (const f of ['prompt', 'negativePrompt']) {
         if (!thText(img[f])) p(`[${label}] image.${f} 缺失或为空`);
       }
       if (!Array.isArray(img.tags)) p(`[${label}] image.tags 必须是数组`);
@@ -515,7 +515,7 @@ export function renderMarkdown(doc, lang = null) {
     out.push(`### ${t.promptsTitle}`, '');
     out.push(`**${t.promptMaster}**`, '', '```text', s.image.prompt, '```', '');
     out.push(`**${t.promptNegative}**`, '', '```text', s.image.negativePrompt, '```', '');
-    out.push(`**${t.promptSheet}**`, '', '```text', s.image.sheet, '```', '');
+    if (thText(s.image.sheet)) out.push(`**${t.promptSheet}**`, '', '```text', s.image.sheet, '```', '');
     if (s.image.tags.length) out.push(`\`${s.image.tags.join('`, `')}\``, '');
   }
 
@@ -540,7 +540,7 @@ export function renderMarkdown(doc, lang = null) {
       out.push(`### ${t.promptsTitle}`, '');
       out.push(`**${t.promptMaster}**`, '', '```text', pr.image.prompt, '```', '');
       out.push(`**${t.promptNegative}**`, '', '```text', pr.image.negativePrompt, '```', '');
-      out.push(`**${t.promptSheet}**`, '', '```text', pr.image.sheet, '```', '');
+      if (thText(pr.image.sheet)) out.push(`**${t.promptSheet}**`, '', '```text', pr.image.sheet, '```', '');
     }
   }
 

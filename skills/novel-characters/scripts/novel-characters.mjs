@@ -447,7 +447,7 @@ export function seedFromOutline(outline) {
         arc: c?.arc ?? '',
         relationships: [], evidence: [],
       },
-      image: { prompt: '', promptLocal: '', negativePrompt: '', tags: [], sheet: '' },
+      image: { prompt: '', negativePrompt: '', tags: [], sheet: '' },
       voice: { timbre: '', pitch: '', pace: '', accent: '', emotion: '', prompt: '', referenceHint: '' },
       ...(note ? { seedNote: note } : {}),
     };

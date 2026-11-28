@@ -13,7 +13,7 @@ allowed-tools:
   - Task
   - Glob
 metadata:
-  version: 2.2.0
+  version: 2.2.1
   triggers:
     - novel-characters
     - 拆角色
@@ -229,7 +229,7 @@ report.html 的样式约定见 `{baseDir}/references/report-style.md`——要�
 - 单次上限 24 块（净覆盖约 93 万字符），超了会明确报 `truncated`，不静默截断
 - 人类可读字段跟随 `--lang`（默认中文）
 - `image.prompt` 写**中文长版**（≥300 字，行文规则与三区版式见 `references/prompting.md`）——那条就是投产用的提示词
-- `image.promptLocal` 写英文对照给只吃英文的引擎；`image.negativePrompt` / `image.sheet` / `tags` 仍是英文机器字段
+- `image.negativePrompt` / `image.sheet` / `tags` 仍是英文机器字段。**不再产 `image.promptLocal`**（英文全文翻译，2026-11-28 定：纯浪费 token）——出图只喂中文主提示词＋英文反向；字段保留可选，旧文件带着它照样过校验
 - TTS 音色提示词**永远英文**，那个引擎吃英文最稳
 - **本 skill 不出图。**`image.sheet` 是给下游的版面指令，版面最容易崩的几处（一张图两个长相、
   为了塞细节把人物压扁、左栏收口）靠提示词里写死的几句压住，见 `references/sheet.md`

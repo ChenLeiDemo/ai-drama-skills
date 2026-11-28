@@ -45,7 +45,6 @@
 
   "image": {
     "prompt": "Character design sheet of an elderly Chinese ferryman ...",
-    "promptLocal": "角色设定图：约七十岁的中国老船夫……",
     "negativePrompt": "young face, smooth poreless skin, perfectly symmetrical face, dead eyes without catchlights, helmet hair, extra fingers, ...",
     "tags": ["character sheet", "three-quarter view", "neutral background"],
     "sheet": "Single character model sheet on ONE 16:9 landscape canvas ... LEFT ZONE ... about 34% ... one bust portrait ... RIGHT-TOP ZONE ... three FULL-BODY views ... PROPORTIONS ARE CRITICAL ... RIGHT-BOTTOM ZONE ... four to five small isolated close-up studies ..."
@@ -76,7 +75,7 @@
 | `persona.*` | — | **本地语言** | `personality` 3–5 个词 |
 | `persona.evidence` | string[] | **原文语言** | **逐字引用**，永远不翻译——翻了就不是证据了。没有就空数组 |
 | `image.prompt` | string | **中文长版** | 角色设定板提示词：内容层 + 三区版式，≥300 字；**禁止出现人名**；**必须写明族裔／年代／地域，并保留身份对应的可见设计**；写法见 `prompting.md` |
-| `image.promptLocal` | string | 英文 | `image.prompt`（中文长版）的英文对照，给只吃英文的出图模型；可省略；**同样禁止人名** |
+| `image.promptLocal` | string | — | **已废弃，不再产出**（曾是 `image.prompt` 的英文全文翻译，纯浪费 token，2026-11-28 定）。字段保留可选：旧文件带着照样过校验，若存在仍**禁止人名** |
 | `image.negativePrompt` | string | **英文** | 逗号分隔 |
 | `image.tags` | string[] | **英文** | 4–8 个检索标签：题材、年代、色板、材质、光照。**不打画风标**（`semi-realistic`、`painterly` 这类），画风出图时才定 |
 | `image.sheet` | string | **英文** | **角色设定图**，16:9 三区版面：左约 34% 半身像（面部基准）／右上全身三视图／右下细节条，细线分隔；**禁止出现人名**；**必须写明族裔／年代／地域** |

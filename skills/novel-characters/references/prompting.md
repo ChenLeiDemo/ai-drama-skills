@@ -3,7 +3,7 @@
 `image.prompt` 现在写**中文长版**：内容层 + 版面层合一，规则内化自 [fisher-moss-prompt-expander](https://github.com/Work-Fisher/fisher-moss-prompt-expander)，版式沿用本技能原有的三区设定板。
 
 - `image.prompt`：中文长版，**投产就贴这一条**
-- `image.promptLocal`：写成英文对照（给只吃英文的出图模型），可省略
+- ~~`image.promptLocal`~~：**不再产出**（英文全文翻译纯浪费 token，2026-11-28 定）。`image.promptLocal` 字段保留可选，旧文件带着照样过校验；新产出一律不写
 - `image.negativePrompt` / `image.sheet` / `tags`：仍是英文机器字段，门在查
 
 ## 一、内容层：十段怎么排
